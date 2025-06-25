@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, Fragment } from "react"
+import { useState, useMemo, useEffect, Fragment, useRef } from "react"
 import type { Request, MuhtarInfo } from "@/lib/data"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -45,6 +45,8 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
   const [selectedRequest, setSelectedRequest] = useState<Request>()
   const [selectedRequestIdForLogs, setSelectedRequestIdForLogs] = useState<string>()
   const [isCompactMode, setIsCompactMode] = useState(true)
+  const [scrollPosition, setScrollPosition] = useState(0)
+  const tableRef = useRef<HTMLDivElement>(null)
 
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set())
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -227,6 +229,28 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
     URL.revokeObjectURL(url)
   }
 
+  /* ───── scroll handling ────────────────────────────────── */
+  const handleScroll = () => {
+    if (tableRef.current) {
+      setScrollPosition(tableRef.current.scrollTop)
+    }
+  }
+
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.scrollTop = scrollPosition
+    }
+  }, [scrollPosition, filtered])
+
+  const handleUpdateRequest = async (id: string, data: Partial<Request> & { guncelleyen?: string }) => {
+    await onUpdateRequest(id, data)
+    if (tableRef.current) {
+      setTimeout(() => {
+        tableRef.current!.scrollTop = scrollPosition
+      }, 0)
+    }
+  }
+
   /* ───── render ────────────────────────────────────────── */
   return (
     <TooltipProvider>
@@ -309,7 +333,7 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                 <RequestForm
                   initialData={selectedRequest}
                   onSave={(data) => {
-                    selectedRequest ? onUpdateRequest(selectedRequest.id, data) : onAddRequest(data)
+                    selectedRequest ? handleUpdateRequest(selectedRequest.id, data) : onAddRequest(data)
                     setIsFormOpen(false)
                   }}
                   onClose={() => setIsFormOpen(false)}
@@ -328,9 +352,12 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
           </div>
         </div>
         {/* actual table */}
-        <div className="border rounded-lg overflow-x-auto shadow-sm">
-          {" "}
-          {/* Kart yapısı, gölge */}
+        <div 
+          ref={tableRef} 
+          onScroll={handleScroll} 
+          className="relative overflow-auto border rounded-lg"
+          style={{ maxHeight: "calc(100vh - 250px)" }}
+        >
           <Table className="table-zebra">
             {" "}
             {/* Zebra çizgili tablo */}
