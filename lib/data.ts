@@ -130,8 +130,8 @@ export const addRequest = async (
   const requestToInsert = {
     talep_no,
     talebi_olusturan: newRequest.talebiOlusturan,
-    ilce_adi: newRequest.ilceAdi,
-    mahalle_adi: newRequest.mahalleAdi,
+    ilce_adi: newRequest.ilceAdi.toUpperCase(),
+    mahalle_adi: newRequest.mahalleAdi.toUpperCase(),
     muhtar_adi: newRequest.muhtarAdi ?? "",
     muhtar_telefonu: newRequest.muhtarTelefonu ?? "",
     talebin_gelis_sekli: newRequest.talebinGelisSekli,

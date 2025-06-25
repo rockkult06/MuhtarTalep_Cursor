@@ -51,7 +51,13 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
       setErrorMuhtarData(null)
       try {
         const data = await getMuhtarData()
-        setMuhtarInfos(data)
+        // İlçe ve mahalle adlarını büyük harfe çevir
+        const upperCaseData = data.map(info => ({
+          ...info,
+          ilceAdi: info.ilceAdi.toUpperCase(),
+          mahalleAdi: info.mahalleAdi.toUpperCase()
+        }))
+        setMuhtarInfos(upperCaseData)
       } catch (err) {
         console.error("Failed to fetch muhtar data:", err)
         setErrorMuhtarData("Muhtar bilgileri yüklenirken bir hata oluştu.")
@@ -65,8 +71,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   useEffect(() => {
     if (formData.ilceAdi) {
       const mahalleler = muhtarInfos
-        .filter((info) => info.ilceAdi.toLowerCase() === formData.ilceAdi.toLowerCase())
-        .map((info) => info.mahalleAdi)
+        .filter((info) => info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase())
+        .map((info) => info.mahalleAdi.toUpperCase())
       setFilteredMahalleler([...new Set(mahalleler)])
     } else {
       setFilteredMahalleler([])
@@ -81,8 +87,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     if (formData.ilceAdi && formData.mahalleAdi) {
       const selectedMuhtar = muhtarInfos.find(
         (info) =>
-          info.ilceAdi.toLowerCase() === formData.ilceAdi.toLowerCase() &&
-          info.mahalleAdi.toLowerCase() === formData.mahalleAdi.toLowerCase(),
+          info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase() &&
+          info.mahalleAdi.toUpperCase() === formData.mahalleAdi.toUpperCase(),
       )
       if (selectedMuhtar) {
         setFormData((prev) => ({
@@ -112,7 +118,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }))
+    setFormData((prev) => ({ ...prev, [id]: id === "ilceAdi" || id === "mahalleAdi" ? value.toUpperCase() : value }))
   }
 
   const handleDateChange = (date: Date | undefined) => {
