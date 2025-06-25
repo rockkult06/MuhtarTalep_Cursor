@@ -405,23 +405,12 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                             )
                           case "mahalleAdi":
                             return (
-                              <Select
-                                disabled={!filters.ilceAdi && uniqueMahalleler.length === 0}
+                              <Input
+                                {...commonProps}
+                                placeholder="Mahalle ara..."
                                 value={filters[col]}
-                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                              >
-                                <SelectTrigger {...commonProps}>
-                                  <SelectValue placeholder="Mahalle Seç" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">Tümü</SelectItem>
-                                  {uniqueMahalleler.map((o) => (
-                                    <SelectItem key={o} value={o}>
-                                      {o}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                onChange={(e) => handleFilterChange(col, e.target.value)}
+                              />
                             )
                           case "talebinGelisSekli":
                             return (
