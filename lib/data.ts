@@ -1,0 +1,387 @@
+import { supabase } from "./supabase"
+
+// Veri yapıları için arayüzler
+export interface Request {
+  id: string
+  talepNo: string
+  talebiOlusturan: string
+  ilceAdi: string
+  mahalleAdi: string
+  muhtarAdi: string
+  muhtarTelefonu: string
+  talebinGelisSekli: string
+  talepTarihi: string // YYYY-MM-DD formatında
+  talepKonusu: string
+  aciklama: string
+  degerlendirme: string
+  degerlendirmeSonucu: string
+  guncellemeTarihi: string // YYYY-MM-DD formatında
+  guncelleyen?: string // İsteğe bağlı
+}
+
+export interface MuhtarInfo {
+  ilceAdi: string
+  mahalleAdi: string
+  muhtarAdi: string
+  muhtarTelefonu: string
+}
+
+export interface LogEntry {
+  id: string
+  requestId: string
+  timestamp: string
+  action: "create" | "update" | "delete" // Added 'delete'
+  changes: { field: string; oldValue: any; newValue: any }[]
+  guncelleyen?: string
+}
+
+// Sabit Dropdown Seçenekleri
+export const dropdownOptions = {
+  talebinGelisSekli: ["Şifahi Bildirim", "HİM", "CİMER", "EBYS", "İlçe Koordinasyon Toplantısı", "Genel Md.Toplantı"],
+  talepKonusu: ["Hat Talepleri", "Servis Sıklıkları", "Durak Talepleri", "Diğer"],
+  degerlendirmeSonucu: ["İnceleniyor", "Olumlu", "Olumsuz", "Değerlendirilecek"],
+}
+
+// Yardımcı fonksiyonlar
+export const getRequests = async (): Promise<Request[]> => {
+  const { data, error } = await supabase.from("requests").select("*").order("talep_no", { ascending: true })
+  if (error) {
+    console.error("Error fetching requests:", error)
+    return []
+  }
+  // Convert snake_case to camelCase for frontend consistency
+  return data.map((item) => ({
+    id: item.id,
+    talepNo: item.talep_no,
+    talebiOlusturan: item.talebi_olusturan,
+    ilceAdi: item.ilce_adi,
+    mahalleAdi: item.mahalle_adi,
+    muhtarAdi: item.muhtar_adi,
+    muhtarTelefonu: item.muhtar_telefonu,
+    talebinGelisSekli: item.talebin_gelis_sekli,
+    talepTarihi: item.talep_tarihi,
+    talepKonusu: item.talep_konusu,
+    aciklama: item.aciklama,
+    degerlendirme: item.degerlendirme,
+    degerlendirmeSonucu: item.degerlendirme_sonucu,
+    guncellemeTarihi: item.guncelleme_tarihi,
+    guncelleyen: item.guncelleyen,
+  }))
+}
+
+export const getRequestById = async (id: string): Promise<Request | undefined> => {
+  const { data, error } = await supabase.from("requests").select("*").eq("id", id).single()
+  if (error) {
+    console.error("Error fetching request by ID:", error)
+    return undefined
+  }
+  if (!data) return undefined
+
+  // Convert snake_case to camelCase
+  return {
+    id: data.id,
+    talepNo: data.talep_no,
+    talebiOlusturan: data.talebi_olusturan,
+    ilceAdi: data.ilce_adi,
+    mahalleAdi: data.mahalle_adi,
+    muhtarAdi: data.muhtar_adi,
+    muhtarTelefonu: data.muhtar_telefonu,
+    talebinGelisSekli: data.talebin_gelis_sekli,
+    talepTarihi: data.talep_tarihi,
+    talepKonusu: data.talep_konusu,
+    aciklama: data.aciklama,
+    degerlendirme: data.degerlendirme,
+    degerlendirmeSonucu: data.degerlendirme_sonucu,
+    guncellemeTarihi: data.guncelleme_tarihi,
+    guncelleyen: data.guncelleyen,
+  }
+}
+
+export const addRequest = async (
+  newRequest: Omit<Request, "id" | "guncellemeTarihi"> & {
+    talepNo?: string
+    guncelleyen?: string
+  },
+): Promise<Request | undefined> => {
+  // ─────────────  TALep NO (auto or provided) ──────────────
+  // Talep tarihi boş geliyor-sa bugünün tarihi olsun (YYYY-MM-DD).
+  const safeTalepTarihi =
+    newRequest.talepTarihi && newRequest.talepTarihi.trim() !== ""
+      ? newRequest.talepTarihi
+      : new Date().toISOString().split("T")[0]
+  let talep_no = newRequest.talepNo
+  if (!talep_no) {
+    // fetch the last talep_no and increment
+    const { data: lastReq, error: lastErr } = await supabase
+      .from("requests")
+      .select("talep_no")
+      .order("talep_no", { ascending: false })
+      .limit(1)
+
+    if (lastErr) {
+      console.error("Error getting last talep_no:", lastErr)
+      return undefined
+    }
+    const lastNo = lastReq?.[0]?.talep_no
+    const next = lastNo ? Number.parseInt(lastNo.split("-")[1]) + 1 : 1
+    talep_no = `MTYS-${String(next).padStart(4, "0")}`
+  }
+
+  const requestToInsert = {
+    talep_no,
+    talebi_olusturan: newRequest.talebiOlusturan,
+    ilce_adi: newRequest.ilceAdi,
+    mahalle_adi: newRequest.mahalleAdi,
+    muhtar_adi: newRequest.muhtarAdi ?? "",
+    muhtar_telefonu: newRequest.muhtarTelefonu ?? "",
+    talebin_gelis_sekli: newRequest.talebinGelisSekli,
+    talep_tarihi: safeTalepTarihi,
+    talep_konusu: newRequest.talepKonusu,
+    aciklama: newRequest.aciklama,
+    degerlendirme: newRequest.degerlendirme,
+    degerlendirme_sonucu: newRequest.degerlendirmeSonucu,
+    guncelleme_tarihi: new Date().toISOString().split("T")[0],
+    guncelleyen: newRequest.guncelleyen,
+  }
+
+  const { data, error } = await supabase.from("requests").insert([requestToInsert]).select()
+
+  if (error) {
+    console.error("Error adding request:", error)
+    return undefined
+  }
+
+  const addedRequest = data[0]
+
+  // Log the creation
+  await supabase.from("logs").insert([
+    {
+      request_id: addedRequest.id,
+      action: "create",
+      changes: Object.entries(addedRequest).map(([field, value]) => ({ field, oldValue: null, newValue: value })),
+      guncelleyen: newRequest.guncelleyen,
+    },
+  ])
+
+  // Convert back to camelCase for consistency with frontend interface
+  return {
+    id: addedRequest.id,
+    talepNo: addedRequest.talep_no,
+    talebiOlusturan: addedRequest.talebi_olusturan,
+    ilceAdi: addedRequest.ilce_adi,
+    mahalleAdi: addedRequest.mahalle_adi,
+    muhtarAdi: addedRequest.muhtar_adi,
+    muhtarTelefonu: addedRequest.muhtar_telefonu,
+    talebinGelisSekli: addedRequest.talebin_gelis_sekli,
+    talepTarihi: addedRequest.talep_tarihi,
+    talepKonusu: addedRequest.talep_konusu,
+    aciklama: addedRequest.aciklama,
+    degerlendirme: addedRequest.degerlendirme,
+    degerlendirmeSonucu: addedRequest.degerlendirme_sonucu,
+    guncellemeTarihi: addedRequest.guncelleme_tarihi,
+    guncelleyen: addedRequest.guncelleyen,
+  }
+}
+
+export const updateRequest = async (
+  id: string,
+  updatedFields: Partial<Request> & { guncelleyen?: string },
+): Promise<Request | undefined> => {
+  const { data: oldRequestData, error: oldRequestError } = await supabase
+    .from("requests")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (oldRequestError) {
+    console.error("Error fetching old request for update:", oldRequestError)
+    return undefined
+  }
+
+  const changes: { field: string; oldValue: any; newValue: any }[] = []
+  const fieldsToUpdate: Record<string, any> = {}
+
+  for (const key in updatedFields) {
+    if (key === "guncelleyen") {
+      fieldsToUpdate[key] = updatedFields[key]
+      continue
+    }
+    // Convert camelCase to snake_case for DB field comparison and update
+    const dbField = key.replace(/([A-Z])/g, "_$1").toLowerCase()
+    if (oldRequestData[dbField] !== updatedFields[key as keyof Partial<Request>]) {
+      changes.push({
+        field: key, // Keep original field name for frontend display
+        oldValue: oldRequestData[dbField],
+        newValue: updatedFields[key as keyof Partial<Request>],
+      })
+    }
+    fieldsToUpdate[dbField] = updatedFields[key as keyof Partial<Request>]
+  }
+
+  fieldsToUpdate.guncelleme_tarihi = new Date().toISOString().split("T")[0]
+
+  // Talep tarihi boş geliyor-sa bugünün tarihi olsun (YYYY-MM-DD).
+  fieldsToUpdate.talep_tarihi =
+    updatedFields.talepTarihi && updatedFields.talepTarihi.trim() !== ""
+      ? updatedFields.talepTarihi
+      : oldRequestData.talep_tarihi
+
+  const { data, error } = await supabase.from("requests").update(fieldsToUpdate).eq("id", id).select()
+
+  if (error) {
+    console.error("Error updating request:", error)
+    return undefined
+  }
+
+  const updatedRequest = data[0]
+
+  // Log the update
+  if (changes.length > 0) {
+    await supabase.from("logs").insert([
+      {
+        request_id: updatedRequest.id,
+        action: "update",
+        changes: changes,
+        guncelleyen: updatedFields.guncelleyen,
+      },
+    ])
+  }
+
+  // Convert back to camelCase for consistency with frontend interface
+  return {
+    id: updatedRequest.id,
+    talepNo: updatedRequest.talep_no,
+    talebiOlusturan: updatedRequest.talebi_olusturan,
+    ilceAdi: updatedRequest.ilce_adi,
+    mahalleAdi: updatedRequest.mahalle_adi,
+    muhtarAdi: updatedRequest.muhtar_adi,
+    muhtarTelefonu: updatedRequest.muhtar_telefonu,
+    talebinGelisSekli: updatedRequest.talebin_gelis_sekli,
+    talepTarihi: updatedRequest.talep_tarihi,
+    talepKonusu: updatedRequest.talep_konusu,
+    aciklama: updatedRequest.aciklama,
+    degerlendirme: updatedRequest.degerlendirme,
+    degerlendirmeSonucu: updatedRequest.degerlendirme_sonucu,
+    guncellemeTarihi: updatedRequest.guncelleme_tarihi,
+    guncelleyen: updatedRequest.guncelleyen,
+  }
+}
+
+// NEW: Delete requests by ID(s)
+export const deleteRequests = async (ids: string[]): Promise<boolean> => {
+  try {
+    const response = await fetch("/api/requests", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ids }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error("Error deleting requests:", errorData.error)
+      return false
+    }
+
+    console.log(`${ids.length} request(s) deleted successfully.`)
+    return true
+  } catch (error) {
+    console.error("Failed to delete requests:", error)
+    return false
+  }
+}
+
+export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
+  const { data, error } = await supabase.from("muhtar_info").select("*")
+  if (error) {
+    console.error("Error fetching muhtar data:", error)
+    return []
+  }
+  // Convert snake_case to camelCase
+  return data.map((item) => ({
+    ilceAdi: item.ilce_adi,
+    mahalleAdi: item.mahalle_adi,
+    muhtarAdi: item.muhtar_adi,
+    muhtarTelefonu: item.muhtar_telefonu,
+  }))
+}
+
+export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
+  // Clear existing muhtar data
+  const { error: deleteError } = await supabase.from("muhtar_info").delete().neq("ilce_adi", "NON_EXISTENT_VALUE") // Delete all rows
+  if (deleteError) {
+    console.error("Error clearing existing muhtar data:", deleteError)
+    throw deleteError
+  }
+
+  // Insert new muhtar data
+  const formattedData = data.map((m) => ({
+    ilce_adi: m.ilceAdi.trim().toLowerCase(),
+    mahalle_adi: m.mahalleAdi.trim().toLowerCase(),
+    muhtar_adi: m.muhtarAdi,
+    muhtar_telefonu: m.muhtarTelefonu,
+  }))
+  const { error: insertError } = await supabase.from("muhtar_info").insert(formattedData)
+  if (insertError) {
+    console.error("Error inserting new muhtar data:", insertError)
+    throw insertError
+  }
+}
+
+export const bulkImportRequests = async (
+  data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi">[],
+): Promise<void> => {
+  const currentMuhtarData = await getMuhtarData() // Get current muhtar data from DB
+
+  for (const req of data) {
+    // Muhtar bilgilerini ilçe ve mahalle adına göre bul ve ekle
+    const foundMuhtar = currentMuhtarData.find(
+      (m) =>
+        m.ilceAdi.toLowerCase() === req.ilceAdi.trim().toLowerCase() &&
+        m.mahalleAdi.toLowerCase() === req.mahalleAdi.trim().toLowerCase(),
+    )
+
+    await addRequest({
+      ...req,
+      muhtarAdi: foundMuhtar?.muhtarAdi || "",
+      muhtarTelefonu: foundMuhtar?.muhtarTelefonu || "",
+    })
+  }
+}
+
+export const getLogsForRequest = async (requestId: string): Promise<LogEntry[]> => {
+  const { data, error } = await supabase
+    .from("logs")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("timestamp", { ascending: true })
+
+  if (error) {
+    console.error(`Error fetching logs for request ${requestId}:`, error)
+    return []
+  }
+
+  // Convert snake_case to camelCase and parse JSONB changes
+  return data.map((item) => ({
+    id: item.id,
+    requestId: item.request_id,
+    timestamp: item.timestamp,
+    action: item.action,
+    changes: item.changes, // changes is already JSONB, so it should be parsed correctly
+    guncelleyen: item.guncelleyen,
+  }))
+}
+
+// Sadece geliştirme amaçlı: Verileri sıfırla
+export const resetData = async () => {
+  try {
+    console.log("Resetting all data in Supabase...")
+    await supabase.from("logs").delete().neq("id", "00000000-0000-0000-0000-000000000000") // Delete all logs
+    await supabase.from("requests").delete().neq("id", "00000000-0000-0000-0000-000000000000") // Delete all requests
+    await supabase.from("muhtar_info").delete().neq("ilce_adi", "NON_EXISTENT_VALUE") // Delete all muhtar info
+    console.log("All data cleared.")
+  } catch (error) {
+    console.error("Error resetting data:", error)
+  }
+}
