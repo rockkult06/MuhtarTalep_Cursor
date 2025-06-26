@@ -53,12 +53,21 @@ export function KPICards({ requests, onFilter }: KPICardsProps) {
     },
   ]
 
+  const handleFilterClick = (filter: string | null) => {
+    onFilter((prevFilter) => (prevFilter === filter ? null : filter))
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {kpiData.map((kpi, index) => {
         const Icon = kpi.icon
+        const isActive = kpi.filter === onFilter
         return (
-          <Card key={index} onClick={() => onFilter(kpi.filter)} className="cursor-pointer">
+          <Card
+            key={index}
+            onClick={() => handleFilterClick(kpi.filter)}
+            className={`cursor-pointer ${isActive ? "opacity-100" : "opacity-50"}`}
+          >
             <CardContent className="flex items-center p-6">
               <Icon className={`w-8 h-8 ${kpi.color} mr-4`} />
               <div>
