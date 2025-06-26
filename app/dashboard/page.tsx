@@ -53,9 +53,6 @@ export default function DashboardPage() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
       <main className="flex-1 p-8 md:p-10 animate-fade-in">
-        <div className="backdrop-blur-sm bg-white/30 rounded-2xl p-6 mb-8 border border-white/20 shadow-lg">
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        </div>
         <DashboardCharts requests={requests} />
       </main>
     </div>
