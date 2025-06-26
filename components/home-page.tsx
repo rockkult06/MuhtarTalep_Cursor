@@ -3,6 +3,7 @@ import { Header } from "@/components/header"
 import { RequestTable } from "@/components/request-table"
 import { KPICards } from "@/components/kpi-cards"
 import { getRequests, addRequest, updateRequest, deleteRequests, type Request } from "@/lib/data"
+import { useNavigate } from "react-router-dom"
 
 interface HomePageProps {
   role: string
@@ -13,6 +14,7 @@ export function HomePage({ role }: HomePageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const fetchRequests = async () => {
     setLoading(true)
@@ -100,6 +102,14 @@ export function HomePage({ role }: HomePageProps) {
       <main className="flex-1 p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Talepler</h1>
         <KPICards requests={requests} onFilter={setFilter} activeFilter={filter} />
+        {role === "admin" && (
+          <button
+            onClick={() => navigate("/admin-dashboard")}
+            className="bg-blue-500 text-white p-2 rounded mb-4"
+          >
+            Yönetim Ayarları
+          </button>
+        )}
         {role !== "viewer" && (
           <RequestTable
             requests={requests}

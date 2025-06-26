@@ -2,24 +2,27 @@ import { useState } from "react"
 
 interface User {
   username: string
+  password: string
   role: string
 }
 
 const initialUsers: User[] = [
-  { username: "Admin01", role: "admin" },
-  { username: "Admin02", role: "admin" },
-  { username: "Admin03", role: "admin" },
+  { username: "Admin01", password: "Planlama2025", role: "admin" },
+  { username: "Admin02", password: "Planlama2025", role: "admin" },
+  { username: "Admin03", password: "Planlama2025", role: "admin" },
 ]
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [newUsername, setNewUsername] = useState("")
+  const [newPassword, setNewPassword] = useState("")
   const [newRole, setNewRole] = useState("user")
 
   const addUser = () => {
-    if (newUsername) {
-      setUsers([...users, { username: newUsername, role: newRole }])
+    if (newUsername && newPassword) {
+      setUsers([...users, { username: newUsername, password: newPassword, role: newRole }])
       setNewUsername("")
+      setNewPassword("")
     }
   }
 
@@ -32,6 +35,13 @@ export function UserManagement() {
           placeholder="Yeni Kullanıcı Adı"
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value)}
+          className="p-2 border rounded mr-2"
+        />
+        <input
+          type="password"
+          placeholder="Şifre"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
           className="p-2 border rounded mr-2"
         />
         <select
