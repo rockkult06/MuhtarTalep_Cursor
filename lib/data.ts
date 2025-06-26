@@ -136,7 +136,7 @@ export const addRequest = async (
     muhtar_telefonu: newRequest.muhtarTelefonu ?? "",
     talebin_gelis_sekli: newRequest.talebinGelisSekli,
     talep_tarihi: safeTalepTarihi,
-    talep_konusu: newRequest.talepKonusu,
+    talep_konusu: normalizeTalepKonusu(newRequest.talepKonusu),
     aciklama: newRequest.aciklama,
     degerlendirme: newRequest.degerlendirme,
     degerlendirme_sonucu: newRequest.degerlendirmeSonucu,
@@ -215,7 +215,14 @@ export const updateRequest = async (
         newValue: updatedFields[key as keyof Partial<Request>],
       })
     }
-    fieldsToUpdate[dbField] = updatedFields[key as keyof Partial<Request>]
+    let valueToUpdate = updatedFields[key as keyof Partial<Request>]
+    
+    // Talep konusu güncelleniyorsa normalize et
+    if (key === 'talepKonusu' && typeof valueToUpdate === 'string') {
+      valueToUpdate = normalizeTalepKonusu(valueToUpdate)
+    }
+    
+    fieldsToUpdate[dbField] = valueToUpdate
   }
 
   fieldsToUpdate.guncelleme_tarihi = new Date().toISOString().split("T")[0]
@@ -390,14 +397,22 @@ export const resetData = async () => {
 export const normalizeTalepKonusu = (konu: string): string => {
   const normalizedKonu = konu.trim()
   
-  // Mapping tablosu
+  // Mapping tablosu (büyük/küçük harf duyarsız)
   const mappings: Record<string, string> = {
     "Diğer": "Diğer",
+    "diğer": "Diğer",
     "Diğer Talepler": "Diğer",
+    "diğer talepler": "Diğer",
     "Durak Talepleri": "Durak Talepleri",
-    "Hat Talepleri": "Hat Talepleri", 
+    "durak talepleri": "Durak Talepleri",
+    "Hat Talepleri": "Hat Talepleri",
+    "hat talepleri": "Hat Talepleri",
+    "Hat talepleri": "Hat Talepleri",
+    "hat Talepleri": "Hat Talepleri",
     "Servis Sıklığı Talepleri": "Servis Sıklıkları",
-    "Servis Sıklıkları": "Servis Sıklıkları"
+    "servis sıklığı talepleri": "Servis Sıklıkları",
+    "Servis Sıklıkları": "Servis Sıklıkları",
+    "servis sıklıkları": "Servis Sıklıkları"
   }
   
   return mappings[normalizedKonu] || normalizedKonu
@@ -448,3 +463,5 @@ export const updateTalepKonulari = async (): Promise<void> => {
     console.error("Talep konuları güncellenirken genel hata:", error)
   }
 }
+
+
