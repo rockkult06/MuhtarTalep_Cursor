@@ -1,11 +1,13 @@
+"use client"
+
 import Link from "next/link"
-import { Home, ListChecks, LayoutDashboard, Upload, User } from "lucide-react" // Yeni ikonlar
+import { useAuth } from "@/contexts/auth-context"
+import { Button } from "@/components/ui/button"
+import { Home, ListChecks, LayoutDashboard, Upload } from "lucide-react" // Yeni ikonlar
 
-interface HeaderProps {
-  username: string | null
-}
+export function Header() {
+  const { user, logout } = useAuth()
 
-export function Header({ username }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex items-center h-16 px-6 border-b shrink-0 md:px-8 bg-white shadow-sm">
       <Link href="/" className="flex items-center gap-2 text-lg font-semibold sm:text-base mr-6">
@@ -32,12 +34,17 @@ export function Header({ username }: HeaderProps) {
           <Upload className="w-4 h-4" /> Veri Yükle
         </Link>
       </nav>
-      <div className="flex items-center w-full gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-        {username && (
-          <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-gray-600" />
-            <span className="font-medium text-gray-700">{username}</span>
-          </div>
+      <div className="flex items-center w-full gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        {user && <span className="text-sm text-gray-600 dark:text-gray-300">Hoşgeldin, {user.username}</span>}
+        {user?.role === "admin" && (
+          <Button asChild variant="outline">
+            <Link href="/admin">Sayfa Yönetimi</Link>
+          </Button>
+        )}
+        {user && (
+          <Button onClick={logout} variant="destructive">
+            Çıkış Yap
+          </Button>
         )}
       </div>
     </header>

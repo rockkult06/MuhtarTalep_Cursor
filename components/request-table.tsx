@@ -28,15 +28,18 @@ import type { JSX } from "react"
 import { getMuhtarData } from "@/lib/data"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip" // Tooltip için import
 
+type Role = "admin" | "user" | "viewer"
+
 interface RequestTableProps {
   requests: Request[]
-  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string }) => void
-  onUpdateRequest: (id: string, data: Partial<Request> & { guncelleyen?: string }) => void
+  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi">) => void
+  onUpdateRequest: (id: string, data: Partial<Request>) => void
   onDeleteRequests: (ids: string[]) => void
   filter: string | null
+  role: Role
 }
 
-export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter }: RequestTableProps) {
+export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter, role }: RequestTableProps) {
   /* ───── state ─────────────────────────────────────────── */
   const [searchTerm, setSearchTerm] = useState("")
   const [sortColumn, setSortColumn] = useState<keyof Request | null>("talepTarihi")
