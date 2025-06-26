@@ -1,36 +1,65 @@
-import { useState } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-interface User {
-  username: string
-  role: string
-}
-
-// Gerçek uygulamada bu veriler veritabanından veya API'den gelmelidir.
-const initialUsers: User[] = [
-  { username: "Admin01", role: "admin" },
-  { username: "Admin02", role: "admin" },
-  { username: "Admin03", role: "admin" },
-  { username: "Kullanici01", role: "user" },
-  { username: "Izleyici01", role: "viewer" },
-]
+import { getUsers, addUser, deleteUser, type User, type Role } from "@/lib/data"
 
 export function UserManagement() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [newUsername, setNewUsername] = useState("")
   const [newPassword, setNewPassword] = useState("")
-  const [newRole, setNewRole] = useState("user")
+  const [newRole, setNewRole] = useState<Role>("user")
 
-  const addUser = () => {
-    if (newUsername) {
-      // TODO: Şifreleme ve veritabanına kaydetme işlemi burada yapılmalı.
-      console.log(`Yeni Kullanıcı: ${newUsername}, Şifre: ${newPassword}, Rol: ${newRole}`)
-      setUsers([...users, { username: newUsername, role: newRole }])
-      setNewUsername("")
-      setNewPassword("")
+  const fetchUsers = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const fetchedUsers = await getUsers()
+      setUsers(fetchedUsers)
+    } catch (err) {
+      setError("Kullanıcılar yüklenemedi.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const handleAddUser = async () => {
+    if (!newUsername || !newPassword) {
+      setError("Kullanıcı adı ve şifre boş bırakılamaz.")
+      return
+    }
+    const success = await addUser({
+      username: newUsername,
+      password: newPassword,
+      role: newRole,
+    })
+    if (success) {
+      setNewUsername("")
+      setNewPassword("")
+      fetchUsers() // Refresh list
+    } else {
+      setError("Kullanıcı eklenemedi. Kullanıcı adı zaten mevcut olabilir.")
+    }
+  }
+
+  const handleDeleteUser = async (userId: string) => {
+    const success = await deleteUser(userId)
+    if (success) {
+      fetchUsers() // Refresh list
+    } else {
+      setError("Kullanıcı silinemedi.")
+    }
+  }
+
+  if (isLoading) return <p>Kullanıcılar yükleniyor...</p>
+  
   return (
     <Card>
       <CardHeader>
@@ -38,7 +67,8 @@ export function UserManagement() {
         <CardDescription>Yeni kullanıcılar ekleyin, mevcutları düzenleyin ve rollerini atayın.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-6 flex gap-4 items-end">
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <div className="mb-6 flex flex-wrap gap-4 items-end">
           <input
             type="text"
             placeholder="Yeni Kullanıcı Adı"
@@ -53,12 +83,12 @@ export function UserManagement() {
             onChange={(e) => setNewPassword(e.target.value)}
             className="p-2 border rounded"
           />
-          <select value={newRole} onChange={(e) => setNewRole(e.target.value)} className="p-2 border rounded">
+          <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)} className="p-2 border rounded">
             <option value="admin">Admin</option>
             <option value="user">Kullanıcı</option>
             <option value="viewer">Görüntüleyici</option>
           </select>
-          <button onClick={addUser} className="bg-blue-500 text-white p-2 rounded">
+          <button onClick={handleAddUser} className="bg-blue-500 text-white p-2 rounded">
             Kullanıcı Ekle
           </button>
         </div>
@@ -71,13 +101,14 @@ export function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user, index) => (
-              <tr key={index}>
+            {users.map((user) => (
+              <tr key={user.id}>
                 <td className="border p-2">{user.username}</td>
                 <td className="border p-2">{user.role}</td>
                 <td className="border p-2">
-                  <button className="text-blue-500 mr-2">Düzenle</button>
-                  <button className="text-red-500">Sil</button>
+                  <button onClick={() => handleDeleteUser(user.id)} className="text-red-500">
+                    Sil
+                  </button>
                 </td>
               </tr>
             ))}

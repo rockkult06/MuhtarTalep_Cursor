@@ -2,13 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { verifyUser, type User } from "@/lib/data"
 
 type Role = "admin" | "user" | "viewer"
-
-interface User {
-  username: string;
-  role: Role;
-}
 
 interface AuthContextType {
   user: User | null
@@ -58,11 +54,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, pathname, isLoading, router]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    const foundUser = staticUsers.find((u) => u.username === username && u.password === password)
-    if (foundUser) {
-      const userData = { username: foundUser.username, role: foundUser.role as Role };
-      localStorage.setItem("user", JSON.stringify(userData))
-      setUser(userData)
+    const verifiedUser = await verifyUser(username, password)
+    if (verifiedUser) {
+      localStorage.setItem("user", JSON.stringify(verifiedUser))
+      setUser(verifiedUser)
       router.push("/")
       return true
     }

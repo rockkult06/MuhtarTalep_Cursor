@@ -337,7 +337,7 @@ export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
 }
 
 export const bulkImportRequests = async (
-  data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi">[],
+  data: (Omit<Request, "id" | "guncellemeTarihi"> & { talepNo?: string })[],
 ): Promise<void> => {
   const currentMuhtarData = await getMuhtarData() // Get current muhtar data from DB
 
@@ -462,6 +462,85 @@ export const updateTalepKonulari = async (): Promise<void> => {
   } catch (error) {
     console.error("Talep konuları güncellenirken genel hata:", error)
   }
+}
+
+export type Role = "admin" | "user" | "viewer"
+
+export interface User {
+  id: string
+  username: string
+  role: Role
+  password?: string // Bu alan sadece yeni kullanıcı eklerken kullanılır.
+}
+
+// -----------------------------------------------------------------------------
+// KULLANICI YÖNETİMİ FONKSİYONLARI
+// -----------------------------------------------------------------------------
+
+export const verifyUser = async (username: string, password_raw: string): Promise<User | null> => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, username, role, password")
+    .eq("username", username)
+    .single()
+
+  if (error || !data) {
+    console.error("Error verifying user or user not found:", error?.message)
+    return null
+  }
+
+  // TODO: Şifreler hash'lenmeli ve burada hash karşılaştırması yapılmalı.
+  // Örnek: const isValid = await bcrypt.compare(password_raw, data.password);
+  const isValid = password_raw === data.password
+
+  if (isValid) {
+    const { password, ...user } = data
+    return user
+  }
+
+  return null
+}
+
+export const getUsers = async (): Promise<User[]> => {
+  const { data, error } = await supabase.from("users").select("id, username, role").order("username")
+
+  if (error) {
+    console.error("Error fetching users:", error)
+    return []
+  }
+  return data
+}
+
+export const addUser = async (newUser: Omit<User, "id">): Promise<User | null> => {
+  if (!newUser.password) {
+    throw new Error("Password is required for new user.")
+  }
+
+  // TODO: Şifre burada hash'lenmeli.
+  // Örnek: const hashedPassword = await bcrypt.hash(newUser.password, 10);
+  const userToInsert = {
+    username: newUser.username,
+    password: newUser.password, // Düz metin olarak kaydediliyor!
+    role: newUser.role,
+  }
+
+  const { data, error } = await supabase.from("users").insert(userToInsert).select("id, username, role").single()
+
+  if (error) {
+    console.error("Error adding user:", error)
+    return null
+  }
+  return data
+}
+
+export const deleteUser = async (userId: string): Promise<boolean> => {
+  const { error } = await supabase.from("users").delete().eq("id", userId)
+
+  if (error) {
+    console.error("Error deleting user:", error)
+    return false
+  }
+  return true
 }
 
 
