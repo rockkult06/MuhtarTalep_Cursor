@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface RequestTableProps {
   requests: Request[]
-  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string }) => void
+  onAddRequest: (data: Omit<Request, "id" | "guncellemeTarihi"> & { talepNo?: string; guncelleyen?: string }) => void
   onUpdateRequest: (id: string, data: Partial<Request> & { guncelleyen?: string }) => void
   onDeleteRequests: (ids: string[]) => void
 }

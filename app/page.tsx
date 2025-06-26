@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { RequestTable } from "@/components/request-table"
+import { KPICards } from "@/components/kpi-cards"
 import { getRequests, addRequest, updateRequest, deleteRequests, type Request } from "@/lib/data"
 
 export default function HomePage() {
@@ -29,7 +30,7 @@ export default function HomePage() {
   }, [])
 
   const handleAddRequest = async (
-    newRequestData: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string },
+    newRequestData: Omit<Request, "id" | "guncellemeTarihi"> & { talepNo?: string; guncelleyen?: string },
   ) => {
     try {
       const addedRequest = await addRequest(newRequestData)
@@ -105,6 +106,7 @@ export default function HomePage() {
       <Header />
       <main className="flex-1 p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Talepler</h1>
+        <KPICards requests={requests} />
         <RequestTable
           requests={requests}
           onAddRequest={handleAddRequest}
