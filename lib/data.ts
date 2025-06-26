@@ -15,9 +15,6 @@ export interface Request {
   aciklama: string
   degerlendirme: string
   degerlendirmeSonucu: string
-  degerlendirmeTarihi: string | null
-  sonuc: string
-  talepEden: string
   guncellemeTarihi: string // YYYY-MM-DD formatında
   guncelleyen?: string // İsteğe bağlı
 }
@@ -36,6 +33,13 @@ export interface LogEntry {
   action: "create" | "update" | "delete" // Added 'delete'
   changes: { field: string; oldValue: any; newValue: any }[]
   guncelleyen?: string
+}
+
+// Sabit Dropdown Seçenekleri
+export const dropdownOptions = {
+  talebinGelisSekli: ["Şifahi Bildirim", "HİM", "CİMER", "EBYS", "İlçe Koordinasyon Toplantısı", "Genel Md.Toplantı"],
+  talepKonusu: ["Hat Talepleri", "Servis Sıklıkları", "Durak Talepleri", "Diğer"],
+  degerlendirmeSonucu: ["İnceleniyor", "Olumlu", "Olumsuz", "Değerlendirilecek"],
 }
 
 // Yardımcı fonksiyonlar
@@ -60,9 +64,6 @@ export const getRequests = async (): Promise<Request[]> => {
     aciklama: item.aciklama,
     degerlendirme: item.degerlendirme,
     degerlendirmeSonucu: item.degerlendirme_sonucu,
-    degerlendirmeTarihi: item.degerlendirme_tarihi,
-    sonuc: item.sonuc,
-    talepEden: item.talebi_eden,
     guncellemeTarihi: item.guncelleme_tarihi,
     guncelleyen: item.guncelleyen,
   }))
@@ -91,9 +92,6 @@ export const getRequestById = async (id: string): Promise<Request | undefined> =
     aciklama: data.aciklama,
     degerlendirme: data.degerlendirme,
     degerlendirmeSonucu: data.degerlendirme_sonucu,
-    degerlendirmeTarihi: data.degerlendirme_tarihi,
-    sonuc: data.sonuc,
-    talepEden: data.talebi_eden,
     guncellemeTarihi: data.guncelleme_tarihi,
     guncelleyen: data.guncelleyen,
   }
@@ -142,9 +140,6 @@ export const addRequest = async (
     aciklama: newRequest.aciklama,
     degerlendirme: newRequest.degerlendirme,
     degerlendirme_sonucu: newRequest.degerlendirmeSonucu,
-    degerlendirme_tarihi: newRequest.degerlendirmeTarihi,
-    sonuc: newRequest.sonuc,
-    talebi_eden: newRequest.talepEden,
     guncelleme_tarihi: new Date().toISOString().split("T")[0],
     guncelleyen: newRequest.guncelleyen,
   }
@@ -183,9 +178,6 @@ export const addRequest = async (
     aciklama: addedRequest.aciklama,
     degerlendirme: addedRequest.degerlendirme,
     degerlendirmeSonucu: addedRequest.degerlendirme_sonucu,
-    degerlendirmeTarihi: addedRequest.degerlendirme_tarihi,
-    sonuc: addedRequest.sonuc,
-    talepEden: addedRequest.talebi_eden,
     guncellemeTarihi: addedRequest.guncelleme_tarihi,
     guncelleyen: addedRequest.guncelleyen,
   }
@@ -277,9 +269,6 @@ export const updateRequest = async (
     aciklama: updatedRequest.aciklama,
     degerlendirme: updatedRequest.degerlendirme,
     degerlendirmeSonucu: updatedRequest.degerlendirme_sonucu,
-    degerlendirmeTarihi: updatedRequest.degerlendirme_tarihi,
-    sonuc: updatedRequest.sonuc,
-    talepEden: updatedRequest.talebi_eden,
     guncellemeTarihi: updatedRequest.guncelleme_tarihi,
     guncelleyen: updatedRequest.guncelleyen,
   }
@@ -554,116 +543,26 @@ export const deleteUser = async (userId: string): Promise<boolean> => {
   return true
 }
 
-// -----------------------------------------------------------------------------
-// FORM SEÇENEKLERİ YÖNETİMİ FONKSİYONLARI
-// -----------------------------------------------------------------------------
+export const getAllLogs = async (): Promise<LogEntry[]> => {
+  const { data, error } = await supabase
+    .from("logs")
+    .select("*")
+    .order("timestamp", { ascending: false })
 
-export interface FormOption {
-  id: string;
-  optionType: string;
-  optionValue: string;
+  if (error) {
+    console.error("Error fetching all logs:", error)
+    return []
+  }
+
+  // snake_case'i camelCase'e çevir
+  return data.map((item) => ({
+    id: item.id,
+    requestId: item.request_id,
+    timestamp: item.timestamp,
+    action: item.action,
+    changes: item.changes,
+    guncelleyen: item.guncelleyen,
+  }))
 }
-
-// Yönetim panelinde kullanmak için ham veriyi çeker (ID'ler dahil)
-export const getRawFormOptions = async (): Promise<FormOption[]> => {
-    const { data, error } = await supabase
-        .from("form_options")
-        .select("id, option_type, option_value")
-        .order("option_type")
-        .order("option_value");
-
-    if (error) {
-        console.error("Error fetching raw form options:", error);
-        return [];
-    }
-    return data.map(item => ({
-        id: item.id,
-        optionType: item.option_type,
-        optionValue: item.option_value,
-    }));
-};
-
-// Formlarda (örn: talep ekleme) kullanmak için seçenekleri gruplanmış halde çeker
-export const getFormOptions = async (): Promise<Record<string, string[]>> => {
-  const { data, error } = await supabase
-    .from("form_options")
-    .select("option_type, option_value");
-
-  if (error) {
-    console.error("Error fetching form options:", error);
-    return {};
-  }
-
-  const options: Record<string, string[]> = {};
-  data.forEach(item => {
-    if (!options[item.option_type]) {
-      options[item.option_type] = [];
-    }
-    options[item.option_type].push(item.option_value);
-  });
-  return options;
-};
-
-
-export const addFormOption = async (optionType: string, optionValue: string): Promise<FormOption | null> => {
-  const { data, error } = await supabase
-    .from("form_options")
-    .insert({ option_type: optionType, option_value: optionValue })
-    .select("id, option_type, option_value")
-    .single();
-
-  if (error) {
-    console.error("Error adding form option:", error);
-    return null;
-  }
-  return {
-    id: data.id,
-    optionType: data.option_type,
-    optionValue: data.option_value,
-  };
-};
-
-export const deleteFormOption = async (id: string): Promise<boolean> => {
-  const { error } = await supabase.from("form_options").delete().eq("id", id);
-  if (error) {
-    console.error("Error deleting form option:", error);
-    return false;
-  }
-  return true;
-};
-
-// -----------------------------------------------------------------------------
-// KULLANICI İSTATİSTİKLERİ FONKSİYONLARI
-// -----------------------------------------------------------------------------
-export interface UserStats {
-  creations: Record<string, number>;
-  updates: Record<string, number>;
-}
-
-export const getUserStats = async (): Promise<UserStats> => {
-  const { data, error } = await supabase
-    .from("requests")
-    .select("talebi_olusturan, guncelleyen");
-
-  if (error) {
-    console.error("Error fetching user stats data:", error);
-    return { creations: {}, updates: {} };
-  }
-
-  const stats: UserStats = {
-    creations: {},
-    updates: {},
-  };
-
-  data.forEach(req => {
-    const creator = req.talebi_olusturan || "Bilinmiyor";
-    const updater = req.guncelleyen || "Bilinmiyor";
-
-    stats.creations[creator] = (stats.creations[creator] || 0) + 1;
-    stats.updates[updater] = (stats.updates[updater] || 0) + 1;
-  });
-
-  return stats;
-};
 
 

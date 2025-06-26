@@ -1,14 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
 import { Header } from "@/components/header"
 import { DashboardCharts } from "@/components/dashboard-charts"
-import { getRequests, updateTalepKonulari, type Request } from "@/lib/data"
+import { getRequests, getAllLogs, type Request, type LogEntry } from "@/lib/data"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 
 export default function DashboardPage() {
+  const { user, isLoading: isAuthLoading } = useAuth()
   const [requests, setRequests] = useState<Request[]>([])
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -42,18 +45,29 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchRequests()
-  }, [])
+    if (!isAuthLoading && user) {
+      const fetchData = async () => {
+        setLoading(true)
+        try {
+          // Talepleri ve logları aynı anda çek
+          const [fetchedRequests, fetchedLogs] = await Promise.all([
+            getRequests(),
+            getAllLogs()
+          ]);
+          setRequests(fetchedRequests)
+          setLogs(fetchedLogs)
+        } catch (error) {
+          console.error("Dashboard verileri yüklenirken hata oluştu:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchData()
+    }
+  }, [user, isAuthLoading])
 
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Header />
-        <main className="flex-1 p-8 md:p-10 flex items-center justify-center animate-fade-in">
-          <p>Dashboard verileri yükleniyor...</p>
-        </main>
-      </div>
-    )
+  if (isAuthLoading || loading) {
+    return <div className="flex justify-center items-center min-h-screen">Yükleniyor...</div>
   }
 
   if (error) {
@@ -82,7 +96,7 @@ export default function DashboardPage() {
             {updating ? 'Güncelleniyor...' : 'Talep Konularını Güncelle'}
           </Button>
         </div>
-        <DashboardCharts requests={requests} />
+        <DashboardCharts requests={requests} logs={logs} />
       </main>
     </div>
   )
