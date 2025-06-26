@@ -39,8 +39,8 @@ interface RequestTableProps {
 export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter }: RequestTableProps) {
   /* ───── state ─────────────────────────────────────────── */
   const [searchTerm, setSearchTerm] = useState("")
-  const [sortColumn, setSortColumn] = useState<keyof Request | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [sortColumn, setSortColumn] = useState<keyof Request | null>("talepTarihi")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLogOpen, setIsLogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<Request>()
