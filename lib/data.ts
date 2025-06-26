@@ -632,4 +632,38 @@ export const deleteFormOption = async (id: string): Promise<boolean> => {
   return true;
 };
 
+// -----------------------------------------------------------------------------
+// KULLANICI İSTATİSTİKLERİ FONKSİYONLARI
+// -----------------------------------------------------------------------------
+export interface UserStats {
+  creations: Record<string, number>;
+  updates: Record<string, number>;
+}
+
+export const getUserStats = async (): Promise<UserStats> => {
+  const { data, error } = await supabase
+    .from("requests")
+    .select("talebi_olusturan, guncelleyen");
+
+  if (error) {
+    console.error("Error fetching user stats data:", error);
+    return { creations: {}, updates: {} };
+  }
+
+  const stats: UserStats = {
+    creations: {},
+    updates: {},
+  };
+
+  data.forEach(req => {
+    const creator = req.talebi_olusturan || "Bilinmiyor";
+    const updater = req.guncelleyen || "Bilinmiyor";
+
+    stats.creations[creator] = (stats.creations[creator] || 0) + 1;
+    stats.updates[updater] = (stats.updates[updater] || 0) + 1;
+  });
+
+  return stats;
+};
+
 

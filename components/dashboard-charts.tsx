@@ -22,16 +22,48 @@ import { getMuhtarData, normalizeTalepKonusu } from "@/lib/data"
 import { Hash, MapPin, Tag, TrendingUp, CheckCircle, Users, ThumbsUp, ThumbsDown, Clock, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { UserStats } from "./user-stats"
 
 interface DashboardChartsProps {
   requests: Request[]
 }
 
+interface ChartData {
+  ilceDistribution: { name: string; value: number }[];
+  talepKonusuDistribution: { name: string; value: number }[];
+  degerlendirmeSonucuDistribution: { name: string; value: number }[];
+  monthlyTrends: { month: string; count: number }[];
+  top10IlceTopics: {
+    ilce: string;
+    totalRequests: number;
+    topics: [string, number][];
+  }[];
+  top10MahalleTopics: {
+    mahalle: string;
+    totalRequests: number;
+    topics: [string, number][];
+  }[];
+}
+
 // Pastel tonlarda renk paleti
 const COLORS = ["#60A5FA", "#34D399", "#FBBF24", "#EF4444", "#A78BFA", "#F472B6", "#6EE7B7"]
 
+const RADIAN = Math.PI / 180
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+  if (percent === undefined) return null;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
 export function DashboardCharts({ requests }: DashboardChartsProps) {
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<ChartData>({
     ilceDistribution: [],
     talepKonusuDistribution: [],
     degerlendirmeSonucuDistribution: [],
@@ -257,161 +289,174 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
         </Card>
       </div>
 
-      {/* Ana Grafikler */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2 bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <MapPin className="h-5 w-5 text-blue-600" /> İlçe Bazlı Başvuru Dağılımı
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>İlçe Adı</TableHead>
-                  <TableHead>Toplam Talep Sayısı</TableHead>
-                  <TableHead>Olumlu</TableHead>
-                  <TableHead>Olumsuz</TableHead>
-                  <TableHead>Değerlendirilecek</TableHead>
-                  <TableHead>İnceleniyor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {districtData.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{row.ilce}</TableCell>
-                    <TableCell>{row.total}</TableCell>
-                    <TableCell>{row.olumlu}</TableCell>
-                    <TableCell>{row.olumsuz}</TableCell>
-                    <TableCell>{row.degerlendirilecek}</TableCell>
-                    <TableCell>{row.inceleniyor}</TableCell>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Sol Sütun: İlçe Bazlı Tablo */}
+        <div className="lg:col-span-2">
+          <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+                İlçe Bazlı Başvuru Dağılımı
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>İlçe Adı</TableHead>
+                    <TableHead>Toplam Talep Sayısı</TableHead>
+                    <TableHead>Olumlu</TableHead>
+                    <TableHead>Olumsuz</TableHead>
+                    <TableHead>Değerlendirilecek</TableHead>
+                    <TableHead>İnceleniyor</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <Tag className="h-5 w-5 text-green-600" /> Talep Konularına Göre Dağılım
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                <Pie
-                  data={chartData.talepKonusuDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  animationDuration={500}
-                >
-                  {chartData.talepKonusuDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                </TableHeader>
+                <TableBody>
+                  {districtData.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{row.ilce}</TableCell>
+                      <TableCell>{row.total}</TableCell>
+                      <TableCell>{row.olumlu}</TableCell>
+                      <TableCell>{row.olumsuz}</TableCell>
+                      <TableCell>{row.degerlendirilecek}</TableCell>
+                      <TableCell>{row.inceleniyor}</TableCell>
+                    </TableRow>
                   ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: "16px", 
-                    border: "none", 
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    backdropFilter: "blur(20px)",
-                    backgroundColor: "rgba(255,255,255,0.95)"
-                  }} 
-                />
-                <Legend wrapperStyle={{ paddingTop: "10px" }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <CheckCircle className="h-5 w-5 text-purple-600" /> Değerlendirme Sonuçları
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                <Pie
-                  data={chartData.degerlendirmeSonucuDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  animationDuration={500}
-                >
-                  {chartData.degerlendirmeSonucuDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: "16px", 
-                    border: "none", 
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    backdropFilter: "blur(20px)",
-                    backgroundColor: "rgba(255,255,255,0.95)"
-                  }} 
-                />
-                <Legend wrapperStyle={{ paddingTop: "10px" }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Sağ Sütun: İki Grafik Alt Alta */}
+        <div className="flex flex-col gap-6">
+          {/* Talep Konularına Göre Dağılım */}
+          <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Tag className="h-5 w-5 mr-2 text-purple-600" />
+                Talep Konularına Göre Dağılım
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <Pie
+                    data={chartData.talepKonusuDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    dataKey="value"
+                    label={renderCustomizedLabel}
+                    animationDuration={500}
+                  >
+                    {chartData.talepKonusuDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: "16px", 
+                      border: "none", 
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                      backdropFilter: "blur(20px)",
+                      backgroundColor: "rgba(255,255,255,0.95)"
+                    }} 
+                  />
+                  <Legend wrapperStyle={{ paddingTop: "10px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card className="lg:col-span-2 bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <TrendingUp className="h-5 w-5 text-orange-600" /> Aylık Talep Eğilimleri
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData.monthlyTrends} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300/50" />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-                <YAxis tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: "16px", 
-                    border: "none", 
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    backdropFilter: "blur(20px)",
-                    backgroundColor: "rgba(255,255,255,0.95)"
-                  }} 
-                />
-                <Legend wrapperStyle={{ paddingTop: "10px" }} />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#F97316"
-                  activeDot={{ r: 6, fill: "#EA580C" }}
-                  name="Talep Sayısı"
-                  strokeWidth={3}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* Değerlendirme Sonuçları */}
+          <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                Değerlendirme Sonuçları
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <Pie
+                    data={chartData.degerlendirmeSonucuDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    dataKey="value"
+                    label={renderCustomizedLabel}
+                    animationDuration={500}
+                  >
+                    {chartData.degerlendirmeSonucuDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: "16px", 
+                      border: "none", 
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                      backdropFilter: "blur(20px)",
+                      backgroundColor: "rgba(255,255,255,0.95)"
+                    }} 
+                  />
+                  <Legend wrapperStyle={{ paddingTop: "10px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
+      {/* Aylık Trend Grafiği - Tam Genişlik */}
+      <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-indigo-600" />
+            Aylık Talep Dağılımı
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData.monthlyTrends} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300/50" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
+              <YAxis tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: "16px", 
+                  border: "none", 
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                  backdropFilter: "blur(20px)",
+                  backgroundColor: "rgba(255,255,255,0.95)"
+                }} 
+              />
+              <Legend wrapperStyle={{ paddingTop: "10px" }} />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#F97316"
+                activeDot={{ r: 6, fill: "#EA580C" }}
+                name="Talep Sayısı"
+                strokeWidth={3}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* İki Tablo Yan Yana */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* En Çok Talep Gelen İlçeler */}
-        <Card className="lg:col-span-3 bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <MapPin className="h-5 w-5 text-teal-600" /> En Çok Talep Gelen 10 İlçe
-            </CardTitle>
+        <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
+          <CardHeader>
+            <CardTitle>En Çok Talep Gelen 10 İlçe</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent>
             {chartData.top10IlceTopics.length === 0 ? (
               <p className="text-center text-gray-500">Veri bulunamadı.</p>
             ) : (
@@ -440,15 +485,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
             )}
           </CardContent>
         </Card>
-
         {/* En Çok Talep Gelen Mahalleler */}
-        <Card className="lg:col-span-3 bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center gap-2 text-gray-700">
-              <MapPin className="h-5 w-5 text-indigo-600" /> En Çok Talep Gelen 10 Mahalle
-            </CardTitle>
+        <Card className="bg-white/40 backdrop-blur-md border-white/50 shadow-lg rounded-2xl">
+          <CardHeader>
+            <CardTitle>En Çok Talep Gelen 10 Mahalle</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent>
             {chartData.top10MahalleTopics.length === 0 ? (
               <p className="text-center text-gray-500">Veri bulunamadı.</p>
             ) : (
@@ -478,6 +520,9 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Kullanıcı İstatistikleri */}
+      <UserStats />
     </div>
   )
 }
