@@ -11,10 +11,10 @@ interface KPICardsProps {
 export function KPICards({ requests, onFilter, activeFilter }: KPICardsProps) {
   // KPI hesaplamaları
   const totalRequests = requests.length
-  const approvedRequests = requests.filter((req) => req.degerlendirmeSonucu === "Olumlu").length
-  const rejectedRequests = requests.filter((req) => req.degerlendirmeSonucu === "Olumsuz").length
-  const pendingRequests = requests.filter((req) => req.degerlendirmeSonucu === "Değerlendirilecek").length
-  const inProgressRequests = requests.filter((req) => req.degerlendirmeSonucu === "İnceleniyor").length
+  const approvedRequests = requests.filter((req) => req.degerlendirmeSonucu.trim() === "Olumlu").length
+  const rejectedRequests = requests.filter((req) => req.degerlendirmeSonucu.trim() === "Olumsuz").length
+  const pendingRequests = requests.filter((req) => req.degerlendirmeSonucu.trim() === "Değerlendirilecek").length
+  const inProgressRequests = requests.filter((req) => req.degerlendirmeSonucu.trim() === "İnceleniyor").length
 
   const kpiData = [
     {
