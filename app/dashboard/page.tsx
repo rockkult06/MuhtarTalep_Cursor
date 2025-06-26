@@ -50,10 +50,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-theme-soft-gray">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
       <main className="flex-1 p-8 md:p-10 animate-fade-in">
-        <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+        <div className="backdrop-blur-sm bg-white/30 rounded-2xl p-6 mb-8 border border-white/20 shadow-lg">
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+        </div>
         <DashboardCharts requests={requests} />
       </main>
     </div>

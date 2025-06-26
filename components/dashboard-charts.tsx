@@ -59,15 +59,19 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
   useEffect(() => {
     if (loadingMuhtarData) return
 
-    // İlçe bazlı başvuru dağılımı (Tüm ilçeleri gösterecek şekilde güncellendi)
-    const uniqueIlceler = [...new Set(allMuhtarInfos.map((info) => info.ilceAdi))]
+    // İlçe bazlı başvuru dağılımı (Büyük/küçük harf sorununu çöz)
+    const uniqueIlceler = [...new Set(allMuhtarInfos.map((info) => info.ilceAdi.toUpperCase()))]
     const ilceCounts: Record<string, number> = {}
     uniqueIlceler.forEach((ilce) => (ilceCounts[ilce] = 0)) // Initialize all districts to 0
 
     requests.forEach((req) => {
-      ilceCounts[req.ilceAdi] = (ilceCounts[req.ilceAdi] || 0) + 1
+      const normalizedIlce = req.ilceAdi.toUpperCase()
+      ilceCounts[normalizedIlce] = (ilceCounts[normalizedIlce] || 0) + 1
     })
-    const ilceDistribution = Object.entries(ilceCounts).map(([name, value]) => ({ name, value }))
+    // Değerlere göre sırala (en yüksekten en düşüğe)
+    const ilceDistribution = Object.entries(ilceCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
 
     // Talep konularına göre grafik
     const talepKonusuCounts = requests.reduce(
@@ -105,13 +109,14 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       .map(([month, count]) => ({ month, count }))
       .sort((a, b) => a.month.localeCompare(b.month))
 
-    // NEW: En çok talep gelen 10 ilçe ve talep konuları
+    // NEW: En çok talep gelen 10 ilçe ve talep konuları (büyük/küçük harf sorununu çöz)
     const ilceTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
-      if (!ilceTopicCounts[req.ilceAdi]) {
-        ilceTopicCounts[req.ilceAdi] = {}
+      const normalizedIlce = req.ilceAdi.toUpperCase()
+      if (!ilceTopicCounts[normalizedIlce]) {
+        ilceTopicCounts[normalizedIlce] = {}
       }
-      ilceTopicCounts[req.ilceAdi][req.talepKonusu] = (ilceTopicCounts[req.ilceAdi][req.talepKonusu] || 0) + 1
+      ilceTopicCounts[normalizedIlce][req.talepKonusu] = (ilceTopicCounts[normalizedIlce][req.talepKonusu] || 0) + 1
     })
 
     const top10IlceTopics = Object.entries(ilceTopicCounts)
@@ -123,10 +128,10 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       .sort((a, b) => b.totalRequests - a.totalRequests)
       .slice(0, 10)
 
-    // NEW: En çok talep gelen 10 mahalle ve talep konuları
+    // NEW: En çok talep gelen 10 mahalle ve talep konuları (büyük/küçük harf sorununu çöz)
     const mahalleTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
-      const mahalleKey = `${req.ilceAdi} - ${req.mahalleAdi}` // Combine ilce and mahalle for unique key
+      const mahalleKey = `${req.ilceAdi.toUpperCase()} - ${req.mahalleAdi.toUpperCase()}` // Normalize both
       if (!mahalleTopicCounts[mahalleKey]) {
         mahalleTopicCounts[mahalleKey] = {}
       }
@@ -164,9 +169,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4 md:p-6">
-      <Card className="lg:col-span-3 shadow-sm rounded-lg">
-        {" "}
-        {/* Kartlara gölge ve yuvarlak köşeler */}
+      <Card className="lg:col-span-3 backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Hash className="h-6 w-6 text-theme-primary" /> Toplam Başvuru Sayısı
@@ -177,30 +180,46 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm rounded-lg">
+      <Card className="lg:col-span-2 backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <MapPin className="h-5 w-5 text-theme-primary" /> İlçe Bazlı Başvuru Dağılımı
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData.ilceDistribution} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              layout="horizontal"
+              data={chartData.ilceDistribution}
+              margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-              <YAxis tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
+              <XAxis type="number" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                tickLine={false} 
+                axisLine={false} 
+                style={{ fontSize: "11px" }} 
+                width={70}
+              />
               <Tooltip
                 cursor={{ fill: "rgba(0,0,0,0.05)" }}
-                contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+                contentStyle={{ 
+                  borderRadius: "12px", 
+                  border: "none", 
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  backdropFilter: "blur(10px)",
+                  backgroundColor: "rgba(255,255,255,0.9)"
+                }}
               />
-              <Legend wrapperStyle={{ paddingTop: "10px" }} />
-              <Bar dataKey="value" fill={COLORS[0]} name="Başvuru Sayısı" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={COLORS[0]} name="Başvuru Sayısı" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm rounded-lg">
+      <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <Tag className="h-5 w-5 text-theme-primary" /> Talep Konularına Göre Dağılım
@@ -223,14 +242,22 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: "12px", 
+                  border: "none", 
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  backdropFilter: "blur(10px)",
+                  backgroundColor: "rgba(255,255,255,0.9)"
+                }} 
+              />
               <Legend wrapperStyle={{ paddingTop: "10px" }} />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm rounded-lg">
+      <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-theme-primary" /> Değerlendirme Sonuçlarına Göre Oranlar
@@ -253,14 +280,22 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: "12px", 
+                  border: "none", 
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  backdropFilter: "blur(10px)",
+                  backgroundColor: "rgba(255,255,255,0.9)"
+                }} 
+              />
               <Legend wrapperStyle={{ paddingTop: "10px" }} />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-2 shadow-sm rounded-lg">
+      <Card className="lg:col-span-2 backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-theme-primary" /> Aylık Talep Eğilimleri
@@ -272,7 +307,15 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
               <YAxis tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-              <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: "12px", 
+                  border: "none", 
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  backdropFilter: "blur(10px)",
+                  backgroundColor: "rgba(255,255,255,0.9)"
+                }} 
+              />
               <Legend wrapperStyle={{ paddingTop: "10px" }} />
               <Line
                 type="monotone"
@@ -288,7 +331,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       </Card>
 
       {/* NEW: Top 10 İlçe ve Talep Konuları (Badge formatında) */}
-      <Card className="lg:col-span-3 shadow-sm rounded-lg">
+      <Card className="lg:col-span-3 backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <MapPin className="h-5 w-5 text-theme-primary" /> En Çok Talep Gelen 10 İlçe
@@ -299,12 +342,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
             <p className="text-center text-muted-foreground">Veri bulunamadı.</p>
           ) : (
             chartData.top10IlceTopics.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-muted/20 rounded-md">
+              <div key={index} className="flex items-center justify-between p-3 bg-white/40 backdrop-blur-sm rounded-xl border border-white/30">
                 <span className="font-medium text-base">{item.ilce}</span>
                 <div className="flex flex-wrap gap-2">
                   <Badge
                     variant="secondary"
-                    className="bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20"
+                    className="bg-theme-primary/20 text-theme-primary hover:bg-theme-primary/30 backdrop-blur-sm rounded-full"
                   >
                     {item.totalRequests} Talep
                   </Badge>
@@ -312,7 +355,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
                     <Badge
                       key={topic}
                       variant="outline"
-                      className="bg-white border-muted-foreground/20 text-muted-foreground"
+                      className="bg-white/60 border-white/40 text-muted-foreground backdrop-blur-sm rounded-full"
                     >
                       {topic}: {count}
                     </Badge>
@@ -325,7 +368,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       </Card>
 
       {/* NEW: Top 10 Mahalle ve Talep Konuları (Badge formatında) */}
-      <Card className="lg:col-span-3 shadow-sm rounded-lg">
+      <Card className="lg:col-span-3 backdrop-blur-sm bg-white/70 border-white/20 shadow-xl rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <MapPin className="h-5 w-5 text-theme-primary" /> En Çok Talep Gelen 10 Mahalle
@@ -336,12 +379,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
             <p className="text-center text-muted-foreground">Veri bulunamadı.</p>
           ) : (
             chartData.top10MahalleTopics.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-muted/20 rounded-md">
+              <div key={index} className="flex items-center justify-between p-3 bg-white/40 backdrop-blur-sm rounded-xl border border-white/30">
                 <span className="font-medium text-base">{item.mahalle}</span>
                 <div className="flex flex-wrap gap-2">
                   <Badge
                     variant="secondary"
-                    className="bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20"
+                    className="bg-theme-primary/20 text-theme-primary hover:bg-theme-primary/30 backdrop-blur-sm rounded-full"
                   >
                     {item.totalRequests} Talep
                   </Badge>
@@ -349,7 +392,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
                     <Badge
                       key={topic}
                       variant="outline"
-                      className="bg-white border-muted-foreground/20 text-muted-foreground"
+                      className="bg-white/60 border-white/40 text-muted-foreground backdrop-blur-sm rounded-full"
                     >
                       {topic}: {count}
                     </Badge>
