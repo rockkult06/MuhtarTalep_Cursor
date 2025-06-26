@@ -41,12 +41,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
   const [allMuhtarInfos, setAllMuhtarInfos] = useState<MuhtarInfo[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
 
-  // KPI hesaplamaları
+  // KPI hesaplamaları (normalize edilmiş)
   const totalRequests = requests.length
-  const olumluCount = requests.filter(r => r.degerlendirmeSonucu === "Olumlu").length
-  const olumsuzCount = requests.filter(r => r.degerlendirmeSonucu === "Olumsuz").length
-  const degerlendirilecekkCount = requests.filter(r => r.degerlendirmeSonucu === "Değerlendirilecek").length
-  const inceleniyorCount = requests.filter(r => r.degerlendirmeSonucu === "İnceleniyor").length
+  const olumluCount = requests.filter(r => r.degerlendirmeSonucu.trim() === "Olumlu").length
+  const olumsuzCount = requests.filter(r => r.degerlendirmeSonucu.trim() === "Olumsuz").length
+  const degerlendirilecekkCount = requests.filter(r => r.degerlendirmeSonucu.trim() === "Değerlendirilecek").length
+  const inceleniyorCount = requests.filter(r => r.degerlendirmeSonucu.trim() === "İnceleniyor").length
 
   useEffect(() => {
     const fetchMuhtarData = async () => {
@@ -67,15 +67,15 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     // İlçe bazlı başvuru dağılımı (Büyük/küçük harf sorununu çöz ve muhtar verisi olmadan da çalışsın)
     const ilceCounts: Record<string, number> = {}
     
-    // Önce requests'teki tüm ilçeleri al
+    // Önce requests'teki tüm ilçeleri al ve normalize et
     requests.forEach((req) => {
-      const normalizedIlce = req.ilceAdi.toUpperCase()
+      const normalizedIlce = req.ilceAdi.trim().toUpperCase()
       ilceCounts[normalizedIlce] = (ilceCounts[normalizedIlce] || 0) + 1
     })
 
     // Muhtar verisi varsa o ilçeleri de ekle (talep olmasa bile)
     if (!loadingMuhtarData && allMuhtarInfos.length > 0) {
-      const uniqueIlceler = [...new Set(allMuhtarInfos.map((info) => info.ilceAdi.toUpperCase()))]
+      const uniqueIlceler = [...new Set(allMuhtarInfos.map((info) => info.ilceAdi.trim().toUpperCase()))]
       uniqueIlceler.forEach((ilce) => {
         if (!(ilce in ilceCounts)) {
           ilceCounts[ilce] = 0
@@ -88,24 +88,20 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
 
-    // Talep konularına göre grafik
-    const talepKonusuCounts = requests.reduce(
-      (acc, req) => {
-        acc[req.talepKonusu] = (acc[req.talepKonusu] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    // Talep konularına göre grafik (normalize et)
+    const talepKonusuCounts: Record<string, number> = {}
+    requests.forEach((req) => {
+      const normalizedKonu = req.talepKonusu.trim()
+      talepKonusuCounts[normalizedKonu] = (talepKonusuCounts[normalizedKonu] || 0) + 1
+    })
     const talepKonusuDistribution = Object.entries(talepKonusuCounts).map(([name, value]) => ({ name, value }))
 
-    // Değerlendirme sonuçlarına göre oranlar
-    const degerlendirmeSonucuCounts = requests.reduce(
-      (acc, req) => {
-        acc[req.degerlendirmeSonucu] = (acc[req.degerlendirmeSonucu] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    // Değerlendirme sonuçlarına göre oranlar (normalize et)
+    const degerlendirmeSonucuCounts: Record<string, number> = {}
+    requests.forEach((req) => {
+      const normalizedSonuc = req.degerlendirmeSonucu.trim()
+      degerlendirmeSonucuCounts[normalizedSonuc] = (degerlendirmeSonucuCounts[normalizedSonuc] || 0) + 1
+    })
     const degerlendirmeSonucuDistribution = Object.entries(degerlendirmeSonucuCounts).map(([name, value]) => ({
       name,
       value,
@@ -127,11 +123,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     // En çok talep gelen 10 ilçe ve talep konuları (büyük/küçük harf sorununu çöz)
     const ilceTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
-      const normalizedIlce = req.ilceAdi.toUpperCase()
+      const normalizedIlce = req.ilceAdi.trim().toUpperCase()
+      const normalizedKonu = req.talepKonusu.trim()
       if (!ilceTopicCounts[normalizedIlce]) {
         ilceTopicCounts[normalizedIlce] = {}
       }
-      ilceTopicCounts[normalizedIlce][req.talepKonusu] = (ilceTopicCounts[normalizedIlce][req.talepKonusu] || 0) + 1
+      ilceTopicCounts[normalizedIlce][normalizedKonu] = (ilceTopicCounts[normalizedIlce][normalizedKonu] || 0) + 1
     })
 
     const top10IlceTopics = Object.entries(ilceTopicCounts)
@@ -146,11 +143,12 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     // En çok talep gelen 10 mahalle ve talep konuları (büyük/küçük harf sorununu çöz)
     const mahalleTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
-      const mahalleKey = `${req.ilceAdi.toUpperCase()} - ${req.mahalleAdi.toUpperCase()}`
+      const mahalleKey = `${req.ilceAdi.trim().toUpperCase()} - ${req.mahalleAdi.trim().toUpperCase()}`
+      const normalizedKonu = req.talepKonusu.trim()
       if (!mahalleTopicCounts[mahalleKey]) {
         mahalleTopicCounts[mahalleKey] = {}
       }
-      mahalleTopicCounts[mahalleKey][req.talepKonusu] = (mahalleTopicCounts[mahalleKey][req.talepKonusu] || 0) + 1
+      mahalleTopicCounts[mahalleKey][normalizedKonu] = (mahalleTopicCounts[mahalleKey][normalizedKonu] || 0) + 1
     })
 
     const top10MahalleTopics = Object.entries(mahalleTopicCounts)
