@@ -18,7 +18,7 @@ import {
   Line,
 } from "recharts"
 import { useEffect, useState } from "react"
-import { getMuhtarData } from "@/lib/data"
+import { getMuhtarData, normalizeTalepKonusu } from "@/lib/data"
 import { Hash, MapPin, Tag, TrendingUp, CheckCircle, Users, ThumbsUp, ThumbsDown, Clock, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
@@ -91,7 +91,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     // Talep konularına göre grafik (normalize et)
     const talepKonusuCounts: Record<string, number> = {}
     requests.forEach((req) => {
-      const normalizedKonu = req.talepKonusu.trim()
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
       talepKonusuCounts[normalizedKonu] = (talepKonusuCounts[normalizedKonu] || 0) + 1
     })
     const talepKonusuDistribution = Object.entries(talepKonusuCounts).map(([name, value]) => ({ name, value }))
@@ -124,7 +124,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     const ilceTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
       const normalizedIlce = req.ilceAdi.trim().toUpperCase()
-      const normalizedKonu = req.talepKonusu.trim()
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
       if (!ilceTopicCounts[normalizedIlce]) {
         ilceTopicCounts[normalizedIlce] = {}
       }
@@ -144,7 +144,7 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     const mahalleTopicCounts: Record<string, Record<string, number>> = {}
     requests.forEach((req) => {
       const mahalleKey = `${req.ilceAdi.trim().toUpperCase()} - ${req.mahalleAdi.trim().toUpperCase()}`
-      const normalizedKonu = req.talepKonusu.trim()
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
       if (!mahalleTopicCounts[mahalleKey]) {
         mahalleTopicCounts[mahalleKey] = {}
       }

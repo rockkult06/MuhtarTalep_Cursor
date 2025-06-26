@@ -385,3 +385,66 @@ export const resetData = async () => {
     console.error("Error resetting data:", error)
   }
 }
+
+// Talep konularını normalize etme fonksiyonu
+export const normalizeTalepKonusu = (konu: string): string => {
+  const normalizedKonu = konu.trim()
+  
+  // Mapping tablosu
+  const mappings: Record<string, string> = {
+    "Diğer": "Diğer",
+    "Diğer Talepler": "Diğer",
+    "Durak Talepleri": "Durak Talepleri",
+    "Hat Talepleri": "Hat Talepleri", 
+    "Servis Sıklığı Talepleri": "Servis Sıklıkları",
+    "Servis Sıklıkları": "Servis Sıklıkları"
+  }
+  
+  return mappings[normalizedKonu] || normalizedKonu
+}
+
+// Veritabanındaki talep konularını güncelleme fonksiyonu
+export const updateTalepKonulari = async (): Promise<void> => {
+  try {
+    console.log("Talep konuları güncelleniyor...")
+    
+    // Tüm talepleri al
+    const { data: requests, error: fetchError } = await supabase
+      .from("requests")
+      .select("id, talep_konusu")
+    
+    if (fetchError) {
+      console.error("Talepler alınırken hata:", fetchError)
+      return
+    }
+    
+    if (!requests || requests.length === 0) {
+      console.log("Güncellenecek talep bulunamadı")
+      return
+    }
+    
+    // Her talebi normalize et ve güncelle
+    const updatePromises = requests.map(async (request) => {
+      const normalizedKonu = normalizeTalepKonusu(request.talep_konusu)
+      
+      if (normalizedKonu !== request.talep_konusu) {
+        console.log(`Güncelleniyor: "${request.talep_konusu}" -> "${normalizedKonu}"`)
+        
+        const { error } = await supabase
+          .from("requests")
+          .update({ talep_konusu: normalizedKonu })
+          .eq("id", request.id)
+        
+        if (error) {
+          console.error(`ID ${request.id} güncellenirken hata:`, error)
+        }
+      }
+    })
+    
+    await Promise.all(updatePromises)
+    console.log("Talep konuları başarıyla güncellendi!")
+    
+  } catch (error) {
+    console.error("Talep konuları güncellenirken genel hata:", error)
+  }
+}
