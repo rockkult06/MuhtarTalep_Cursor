@@ -7,9 +7,10 @@ import { useNavigate } from "react-router-dom"
 
 interface HomePageProps {
   role: string
+  username: string | null
 }
 
-export function HomePage({ role }: HomePageProps) {
+export function HomePage({ role, username }: HomePageProps) {
   const [requests, setRequests] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +78,7 @@ export function HomePage({ role }: HomePageProps) {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-theme-soft-gray">
-        <Header />
+        <Header username={username} />
         <main className="flex-1 p-8 md:p-10 flex items-center justify-center animate-fade-in">
           <p>Yükleniyor...</p>
         </main>
@@ -88,7 +89,7 @@ export function HomePage({ role }: HomePageProps) {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen bg-theme-soft-gray">
-        <Header />
+        <Header username={username} />
         <main className="flex-1 p-8 md:p-10 flex items-center justify-center animate-fade-in">
           <p className="text-red-500">{error}</p>
         </main>
@@ -98,7 +99,7 @@ export function HomePage({ role }: HomePageProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-theme-soft-gray">
-      <Header />
+      <Header username={username} />
       <main className="flex-1 p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Talepler</h1>
         <KPICards requests={requests} onFilter={setFilter} activeFilter={filter} />

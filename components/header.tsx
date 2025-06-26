@@ -1,7 +1,11 @@
 import Link from "next/link"
-import { Home, ListChecks, LayoutDashboard, Upload } from "lucide-react" // Yeni ikonlar
+import { Home, ListChecks, LayoutDashboard, Upload, User } from "lucide-react" // Yeni ikonlar
 
-export function Header() {
+interface HeaderProps {
+  username: string | null
+}
+
+export function Header({ username }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex items-center h-16 px-6 border-b shrink-0 md:px-8 bg-white shadow-sm">
       <Link href="/" className="flex items-center gap-2 text-lg font-semibold sm:text-base mr-6">
@@ -28,8 +32,13 @@ export function Header() {
           <Upload className="w-4 h-4" /> Veri Yükle
         </Link>
       </nav>
-      <div className="flex items-center w-full gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        {/* Sağ tarafta boşluk bırakmak için */}
+      <div className="flex items-center w-full gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+        {username && (
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-gray-600" />
+            <span className="font-medium text-gray-700">{username}</span>
+          </div>
+        )}
       </div>
     </header>
   )

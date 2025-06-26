@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 interface AuthProps {
-  onLogin: (role: string) => void
+  onLogin: (role: string, username: string) => void
 }
 
 const users = [
@@ -19,7 +19,7 @@ export function Auth({ onLogin }: AuthProps) {
   const handleLogin = () => {
     const user = users.find((u) => u.username === username && u.password === password)
     if (user) {
-      onLogin(user.role)
+      onLogin(user.role, user.username)
     } else {
       setError("Geçersiz kullanıcı adı veya şifre")
     }
