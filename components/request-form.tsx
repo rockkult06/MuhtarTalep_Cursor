@@ -15,31 +15,48 @@ import { format } from "date-fns"
 import { type Request, type MuhtarInfo, dropdownOptions, getMuhtarData } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
+type FormData = Omit<
+  Request,
+  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen"
+>;
+
 interface RequestFormProps {
-  initialData?: Request
-  onSave: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string }) => void
-  onClose: () => void
+  initialData?: Request;
+  onSave: (data: FormData) => void;
+  onClose: () => void;
 }
 
+const getInitialFormData = (initialData?: Request): FormData => {
+  const defaults: FormData = {
+    ilceAdi: "",
+    mahalleAdi: "",
+    muhtarAdi: "",
+    muhtarTelefonu: "",
+    talebinGelisSekli: "",
+    talepTarihi: format(new Date(), "yyyy-MM-dd"),
+    talepKonusu: "",
+    aciklama: "",
+    degerlendirme: "",
+    degerlendirmeSonucu: "",
+  };
+
+  if (!initialData) {
+    return defaults;
+  }
+
+  // Sadece FormData'da tanımlı alanları al
+  const filteredData: Partial<FormData> = {};
+  for (const key in defaults) {
+    if (Object.prototype.hasOwnProperty.call(initialData, key)) {
+      (filteredData as any)[key] = (initialData as any)[key];
+    }
+  }
+
+  return { ...defaults, ...filteredData };
+};
+
 export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) {
-  const [formData, setFormData] = useState<
-    Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string }
-  >(
-    initialData || {
-      talebiOlusturan: "",
-      ilceAdi: "",
-      mahalleAdi: "",
-      muhtarAdi: "",
-      muhtarTelefonu: "",
-      talebinGelisSekli: "",
-      talepTarihi: format(new Date(), "yyyy-MM-dd"),
-      talepKonusu: "",
-      aciklama: "",
-      degerlendirme: "",
-      degerlendirmeSonucu: "",
-      guncelleyen: "",
-    },
-  )
+  const [formData, setFormData] = useState<FormData>(() => getInitialFormData(initialData));
   const [muhtarInfos, setMuhtarInfos] = useState<MuhtarInfo[]>([])
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
@@ -128,10 +145,10 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-    onClose()
-  }
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
 
   const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))]
 
@@ -145,18 +162,6 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="talebiOlusturan" className="text-right">
-          Talebi Oluşturan
-        </Label>
-        <Input
-          id="talebiOlusturan"
-          value={formData.talebiOlusturan}
-          onChange={handleChange}
-          className="col-span-3"
-          required
-        />
-      </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="ilceAdi" className="text-right">
           İlçe Adı

@@ -35,14 +35,19 @@ export default function HomePage() {
   }
 
   const handleAddRequest = async (
-    newRequestData: Omit<Request, "id" | "talepNo" | "guncellemeTarihi">,
+    formData: Omit<Request, "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen">,
   ) => {
     if (!user) return
     try {
-      const addedRequest = await addRequest({ ...newRequestData, guncelleyen: user.username, talepNo: undefined })
+      const newRequestData: Omit<Request, "id" | "guncellemeTarihi"> = {
+        ...formData,
+        talebiOlusturan: user.username,
+        guncelleyen: user.username,
+        // talepNo'yu bilerek eklemiyoruz, veritabanı kendi oluşturacak.
+      }
+      const addedRequest = await addRequest(newRequestData)
       if (addedRequest) {
-        setRequests((prev) => [...prev, addedRequest])
-        fetchRequests()
+        fetchRequests() // Listeyi yenile
       }
     } catch (err) {
       console.error("Failed to add request:", err)
@@ -53,7 +58,10 @@ export default function HomePage() {
   const handleUpdateRequest = async (id: string, updatedFields: Partial<Request>) => {
     if (!user) return
     try {
-      const updatedRequest = await updateRequest(id, { ...updatedFields, guncelleyen: user.username })
+      const updatedRequest = await updateRequest(id, {
+        ...updatedFields,
+        guncelleyen: user.username,
+      })
       if (updatedRequest) {
         setRequests((prev) => prev.map((req) => (req.id === id ? updatedRequest : req)))
       }
