@@ -107,7 +107,7 @@ export default function HomePage() {
       <Header />
       <main className="flex-1 p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Talepler</h1>
-        <KPICards requests={requests} onFilter={setFilter} />
+        <KPICards requests={requests} onFilter={setFilter} activeFilter={filter} />
         <RequestTable
           requests={requests}
           onAddRequest={handleAddRequest}

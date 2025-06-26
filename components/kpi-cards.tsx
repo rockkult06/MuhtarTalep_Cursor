@@ -4,10 +4,11 @@ import { ClipboardList, ThumbsUp, ThumbsDown, HelpCircle, Search } from "lucide-
 
 interface KPICardsProps {
   requests: Request[],
-  onFilter: (filter: string | null) => void
+  onFilter: (filter: string | null) => void,
+  activeFilter: string | null
 }
 
-export function KPICards({ requests, onFilter }: KPICardsProps) {
+export function KPICards({ requests, onFilter, activeFilter }: KPICardsProps) {
   // KPI hesaplamaları
   const totalRequests = requests.length
   const approvedRequests = requests.filter((req) => req.degerlendirmeSonucu === "Olumlu").length
@@ -54,19 +55,19 @@ export function KPICards({ requests, onFilter }: KPICardsProps) {
   ]
 
   const handleFilterClick = (filter: string | null) => {
-    onFilter((prevFilter) => (prevFilter === filter ? null : filter))
+    onFilter(filter === activeFilter ? null : filter)
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {kpiData.map((kpi, index) => {
         const Icon = kpi.icon
-        const isActive = kpi.filter === onFilter
+        const isActive = kpi.filter === activeFilter
         return (
           <Card
             key={index}
             onClick={() => handleFilterClick(kpi.filter)}
-            className={`cursor-pointer ${isActive ? "opacity-100" : "opacity-50"}`}
+            className={`cursor-pointer ${isActive ? "shadow-lg" : "opacity-50"}`}
           >
             <CardContent className="flex items-center p-6">
               <Icon className={`w-8 h-8 ${kpi.color} mr-4`} />
