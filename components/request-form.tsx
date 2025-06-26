@@ -12,55 +12,67 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
-import { type Request, type MuhtarInfo, dropdownOptions, getMuhtarData } from "@/lib/data"
+import { type Request, type MuhtarInfo, getMuhtarData, getFormOptions } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useAuth } from '@/contexts/auth-context'
 
-type FormData = Omit<
-  Request,
-  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen"
->;
-
-interface RequestFormProps {
-  initialData?: Request;
-  onSave: (data: FormData) => void;
-  onClose: () => void;
+// The form data should represent the fields in the form, which might be slightly different from the final Request object.
+type FormData = {
+  talepNo: number
+  ilceAdi: string
+  mahalleAdi: string
+  muhtarAdi: string
+  muhtarTelefonu: string
+  talebinGelisSekli: string
+  talepTarihi: string
+  talepKonusu: string
+  aciklama: string
+  degerlendirme: string
+  degerlendirmeSonucu: string
+  talebiOlusturan: string
+  guncelleyen: string
+  degerlendirmeTarihi?: Date
 }
 
-const getInitialFormData = (initialData?: Request): FormData => {
-  const defaults: FormData = {
-    ilceAdi: "",
-    mahalleAdi: "",
-    muhtarAdi: "",
-    muhtarTelefonu: "",
-    talebinGelisSekli: "",
-    talepTarihi: format(new Date(), "yyyy-MM-dd"),
-    talepKonusu: "",
-    aciklama: "",
-    degerlendirme: "",
-    degerlendirmeSonucu: "",
-  };
-
-  if (!initialData) {
-    return defaults;
+function getInitialFormData(initialData?: Request): FormData {
+  return {
+    talepNo: initialData?.talepNo ?? 0,
+    ilceAdi: initialData?.ilceAdi ?? "AKYURT",
+    mahalleAdi: initialData?.mahalleAdi ?? "",
+    muhtarAdi: initialData?.muhtarAdi ?? "",
+    muhtarTelefonu: initialData?.muhtarTelefonu ?? "",
+    talebinGelisSekli: initialData?.talebinGelisSekli ?? "",
+    talepTarihi: initialData?.talepTarihi ?? new Date().toISOString().split("T")[0],
+    talepKonusu: initialData?.talepKonusu ?? "",
+    aciklama: initialData?.aciklama ?? "",
+    degerlendirme: initialData?.degerlendirme ?? "",
+    degerlendirmeSonucu: initialData?.degerlendirmeSonucu ?? "",
+    degerlendirmeTarihi: initialData?.degerlendirmeTarihi
+      ? new Date(initialData.degerlendirmeTarihi)
+      : undefined,
+    talebiOlusturan: initialData?.talebiOlusturan ?? "",
+    guncelleyen: initialData?.guncelleyen ?? "",
   }
+}
 
-  // Sadece FormData'da tanımlı alanları al
-  const filteredData: Partial<FormData> = {};
-  for (const key in defaults) {
-    if (Object.prototype.hasOwnProperty.call(initialData, key)) {
-      (filteredData as any)[key] = (initialData as any)[key];
-    }
-  }
-
-  return { ...defaults, ...filteredData };
-};
+interface RequestFormProps {
+  initialData?: Request
+  onSave: (data: Omit<Request, "id" | "created_at">) => void
+  onClose: () => void
+}
 
 export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) {
-  const [formData, setFormData] = useState<FormData>(() => getInitialFormData(initialData));
+  const { user } = useAuth()
+  const [formData, setFormData] = useState<FormData>(() =>
+    getInitialFormData(initialData)
+  )
   const [muhtarInfos, setMuhtarInfos] = useState<MuhtarInfo[]>([])
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
   const [errorMuhtarData, setErrorMuhtarData] = useState<string | null>(null)
+  const [dynamicDropdownOptions, setDynamicDropdownOptions] = useState<
+    Record<string, string[]>
+  >({})
 
   useEffect(() => {
     const fetchMuhtarData = async () => {
@@ -129,9 +141,22 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     }
   }, [formData.ilceAdi, formData.mahalleAdi, muhtarInfos])
 
+  useEffect(() => {
+    async function fetchOptions() {
+      const options = await getFormOptions();
+      setDynamicDropdownOptions(options);
+    }
+    fetchOptions();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    setFormData((prev) => ({ ...prev, [id]: value }))
+    if (id === 'talepNo') {
+      const numValue = value === '' ? 0 : parseInt(value, 10)
+      setFormData({ ...formData, talepNo: isNaN(numValue) ? 0 : numValue })
+    } else {
+      setFormData((prev) => ({ ...prev, [id]: value }))
+    }
   }
 
   const handleSelectChange = (id: string, value: string) => {
@@ -145,10 +170,28 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-  };
+    e.preventDefault()
+    
+    const dataToSave: Omit<Request, "id" | "created_at"> = {
+      ...formData,
+      talepEden: `${formData.mahalleAdi} / ${formData.muhtarAdi}`,
+      degerlendirmeTarihi: formData.degerlendirmeTarihi
+        ? formData.degerlendirmeTarihi.toISOString()
+        : null,
+      sonuc:
+        formData.degerlendirmeSonucu === "Olumlu"
+          ? "✅"
+          : formData.degerlendirmeSonucu === "Olumsuz"
+          ? "❌"
+          : "📝",
+      guncellemeTarihi: new Date().toISOString(),
+      talebiOlusturan: initialData?.talebiOlusturan || user?.username || "Bilinmiyor",
+      guncelleyen: user?.username || "Bilinmiyor",
+    }
+
+    onSave(dataToSave)
+    onClose()
+  }
 
   const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))]
 
@@ -226,7 +269,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <SelectValue placeholder="Seçiniz" />
           </SelectTrigger>
           <SelectContent>
-            {dropdownOptions.talebinGelisSekli.map((option) => (
+            {dynamicDropdownOptions.talebinGelisSekli?.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>
@@ -274,7 +317,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <SelectValue placeholder="Seçiniz" />
           </SelectTrigger>
           <SelectContent>
-            {dropdownOptions.talepKonusu.map((option) => (
+            {dynamicDropdownOptions.talepKonusu?.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>
@@ -307,7 +350,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <SelectValue placeholder="Seçiniz" />
           </SelectTrigger>
           <SelectContent>
-            {dropdownOptions.degerlendirmeSonucu.map((option) => (
+            {dynamicDropdownOptions.degerlendirmeSonucu?.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>
@@ -316,10 +359,31 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
         </Select>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="guncelleyen" className="text-right">
-          Güncelleyen (İsteğe Bağlı)
+        <Label htmlFor="degerlendirmeTarihi" className="text-right">
+          Değerlendirme Tarihi
         </Label>
-        <Input id="guncelleyen" value={formData.guncelleyen} onChange={handleChange} className="col-span-3" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "col-span-3 justify-start text-left font-normal",
+                !formData.degerlendirmeTarihi && "text-muted-foreground",
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formData.degerlendirmeTarihi ? format(new Date(formData.degerlendirmeTarihi), "PPP") : <span>Tarih Seçin</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={formData.degerlendirmeTarihi ? new Date(formData.degerlendirmeTarihi) : undefined}
+              onSelect={(date) => setFormData((prev) => ({ ...prev, degerlendirmeTarihi: date }))}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="outline" onClick={onClose} className="bg-white text-black">

@@ -4,38 +4,20 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { UserManagement } from "@/components/user-management"
-import { Header } from "@/components/header"
+import { DropdownManagement } from "@/components/dropdown-management"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-// Placeholder for DropdownManagement
-function DropdownManagement() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Form Seçenekleri Yönetimi</CardTitle>
-        <CardDescription>
-          Talep ekleme formundaki (örn: Talep Konusu) seçenekleri buradan yönetebilirsiniz. Bu özellik yakında eklenecektir.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p>Çok yakında...</p>
-      </CardContent>
-    </Card>
-  )
-}
 
 export default function AdminPage() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && user?.role !== "admin") {
+    if (!loading && user?.role !== "admin") {
       router.push("/")
     }
-  }, [user, isLoading, router])
+  }, [user, loading, router])
 
-  if (isLoading || user?.role !== "admin") {
+  if (loading || user?.role !== "admin") {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <p>Yükleniyor veya yetkiniz yok...</p>
@@ -44,23 +26,22 @@ export default function AdminPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Yönetim Paneli</h1>
-        <Tabs defaultValue="user-management">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="user-management">Kullanıcı Yönetimi</TabsTrigger>
-            <TabsTrigger value="dropdown-management">Form Seçenekleri</TabsTrigger>
-          </TabsList>
-          <TabsContent value="user-management">
-            <UserManagement />
-          </TabsContent>
-          <TabsContent value="dropdown-management">
-            <DropdownManagement />
-          </TabsContent>
-        </Tabs>
-      </main>
-    </>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Yönetim Paneli</h2>
+      </div>
+      <Tabs defaultValue="user-management" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="user-management">Kullanıcı Yönetimi</TabsTrigger>
+          <TabsTrigger value="form-options">Form Seçenekleri Yönetimi</TabsTrigger>
+        </TabsList>
+        <TabsContent value="user-management" className="space-y-4">
+          <UserManagement />
+        </TabsContent>
+        <TabsContent value="form-options" className="space-y-4">
+          <DropdownManagement />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 } 

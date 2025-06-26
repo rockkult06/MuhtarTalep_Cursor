@@ -6,14 +6,14 @@ import { verifyUser, type User } from "@/lib/data"
 
 type Role = "admin" | "user" | "viewer"
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null
-  login: (username: string, password: string) => Promise<boolean>
+  login: (userData: User) => void
   logout: () => void
-  isLoading: boolean
+  loading: boolean
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const staticUsers = [
   { username: "Admin01", password: "Planlama2025", role: "admin" },
@@ -21,9 +21,9 @@ const staticUsers = [
   { username: "Admin03", password: "Planlama2025", role: "admin" },
 ]
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -37,12 +37,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to parse user from localStorage", error)
       localStorage.removeItem("user")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }, [])
   
   useEffect(() => {
-    if (isLoading) return;
+    if (loading) return;
 
     const isAuthPage = pathname === '/login';
 
@@ -51,27 +51,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else if (user && isAuthPage) {
       router.push('/');
     }
-  }, [user, pathname, isLoading, router]);
+  }, [user, pathname, loading, router]);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    const verifiedUser = await verifyUser(username, password)
-    if (verifiedUser) {
-      localStorage.setItem("user", JSON.stringify(verifiedUser))
-      setUser(verifiedUser)
-      router.push("/")
-      return true
-    }
-    return false
+  const login = (userData: User) => {
+    setUser(userData)
+    localStorage.setItem("user", JSON.stringify(userData))
+    router.push("/")
   }
 
   const logout = () => {
-    localStorage.removeItem("user")
     setUser(null)
+    localStorage.removeItem("user")
     router.push("/login")
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )
