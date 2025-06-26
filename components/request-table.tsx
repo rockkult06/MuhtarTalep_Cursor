@@ -32,7 +32,7 @@ type Role = "admin" | "user" | "viewer"
 
 interface RequestTableProps {
   requests: Request[]
-  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi">) => void
+  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen">) => void
   onUpdateRequest: (id: string, data: Partial<Request>) => void
   onDeleteRequests: (ids: string[]) => void
   filter: string | null
@@ -283,7 +283,7 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
           <div className="flex items-center gap-3 flex-wrap justify-end">
             {" "}
             {/* Daha kompakt ve sağa hizalı */}
-            {selectedRequestIds.size > 0 && (
+            {role !== 'viewer' && selectedRequestIds.size > 0 && (
               <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="rounded-md shadow-sm hover:shadow-md transition-shadow">
@@ -325,31 +325,37 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
               <Switch id="compact-mode" checked={isCompactMode} onCheckedChange={setIsCompactMode} />
             </div>
             {/* new / edit dialog */}
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => setSelectedRequest(undefined)}
-                  className="bg-theme-primary text-primary-foreground hover:bg-theme-primary/90 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                >
-                  {" "}
-                  {/* Yeni buton rengi ve animasyon */}
-                  <PlusCircle className="mr-2 h-4 w-4" /> Yeni Talep Ekle
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto rounded-lg shadow-lg">
-                <DialogHeader>
-                  <DialogTitle>{selectedRequest ? "Talebi Düzenle" : "Yeni Talep Ekle"}</DialogTitle>
-                </DialogHeader>
-                <RequestForm
-                  initialData={selectedRequest}
-                  onSave={(data) => {
-                    selectedRequest ? handleUpdateRequest(selectedRequest.id, data) : onAddRequest(data)
-                    setIsFormOpen(false)
-                  }}
-                  onClose={() => setIsFormOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            {role !== 'viewer' && (
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => setSelectedRequest(undefined)}
+                    className="bg-theme-primary text-primary-foreground hover:bg-theme-primary/90 rounded-md shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {" "}
+                    {/* Yeni buton rengi ve animasyon */}
+                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Talep Ekle
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto rounded-lg shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle>{selectedRequest ? "Talebi Düzenle" : "Yeni Talep Ekle"}</DialogTitle>
+                  </DialogHeader>
+                  <RequestForm
+                    initialData={selectedRequest}
+                    onSave={(data) => {
+                      if (selectedRequest) {
+                        handleUpdateRequest(selectedRequest.id, data)
+                      } else {
+                        onAddRequest(data)
+                      }
+                      setIsFormOpen(false)
+                    }}
+                    onClose={() => setIsFormOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
             {/* log dialog */}
             <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
               <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto rounded-lg shadow-lg">
@@ -377,13 +383,14 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
               {/* === HEADER ROW === */}
               <TableRow>
                 {[
-                  /* select-all */
-                  <TableHead key="selectAll" className="w-[50px] text-center">
-                    <Checkbox
-                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                      onCheckedChange={(c) => toggleSelectAll(c === true)}
-                    />
-                  </TableHead>,
+                  role !== 'viewer' && (
+                    <TableHead key="selectAll" className="w-[50px] text-center">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={(c) => toggleSelectAll(c === true)}
+                      />
+                    </TableHead>
+                  ),
                   /* dynamic headers */
                   ...visibleColumns.map((col) => (
                     <TableHead key={col}>
@@ -395,10 +402,11 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                       </Button>
                     </TableHead>
                   )),
-                  /* actions */
-                  <TableHead key="actions" className="text-right">
-                    İşlemler
-                  </TableHead>,
+                  role !== 'viewer' && (
+                    <TableHead key="actions" className="text-right">
+                      İşlemler
+                    </TableHead>
+                  ),
                   /* compact detail */
                   isCompactMode && (
                     <TableHead key="detail" className="w-[80px] text-center">
@@ -410,7 +418,9 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
               {/* === FILTER ROW === */}
               <TableRow>
                 {[
-                  <TableHead key="empty" className="w-[50px]" />,
+                  role !== 'viewer' && (
+                    <TableHead key="empty" className="w-[50px]" />
+                  ),
                   ...visibleColumns.map((col) => (
                     <TableHead key={`filter-${col}`} className="py-2">
                       {" "}
@@ -538,7 +548,9 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                       })()}
                     </TableHead>
                   )),
-                  <TableHead key="actions-empty" className="text-right" />,
+                  role !== 'viewer' && (
+                    <TableHead key="actions-empty" className="text-right" />
+                  ),
                   isCompactMode && <TableHead key="detail-empty" className="w-[80px]" />,
                 ]}
               </TableRow>
@@ -559,76 +571,74 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                     {" "}
                     {/* Satır vurgusu */}
                     {[
-                      <TableCell key="sel" className="text-center">
-                        <Checkbox
-                          checked={selectedRequestIds.has(r.id)}
-                          onCheckedChange={(c) => toggleSelectOne(r.id, c as boolean)}
-                        />
-                      </TableCell>,
+                      role !== 'viewer' && (
+                        <TableCell key="sel" className="text-center">
+                          <Checkbox
+                            checked={selectedRequestIds.has(r.id)}
+                            onCheckedChange={(c) => toggleSelectOne(r.id, c as boolean)}
+                          />
+                        </TableCell>
+                      ),
                       ...visibleColumns.map((col) => <TableCell key={col}>{r[col]}</TableCell>),
-                      <TableCell key="actions" className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {" "}
-                          {/* İkonlu butonlar */}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-md"
-                                onClick={() => {
-                                  setSelectedRequest(r)
-                                  setIsFormOpen(true)
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Düzenle</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Düzenle</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-md"
-                                onClick={() => {
-                                  setSelectedRequestIdForLogs(r.id)
-                                  setIsLogOpen(true)
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />
-                                <span className="sr-only">Geçmişi Görüntüle</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Geçmişi Görüntüle</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-md text-red-600 hover:text-red-600"
-                                onClick={() => {
-                                  setSelectedRequestIds(new Set([r.id]))
-                                  setIsDeleteDialogOpen(true)
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Sil</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Sil</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>,
+                      role !== 'viewer' && (
+                        <TableCell key="actions" className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {" "}
+                            {/* İkonlu butonlar */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md"
+                                  onClick={() => {
+                                    setSelectedRequest(r)
+                                    setIsFormOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Düzenle</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Düzenle</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md"
+                                  onClick={() => {
+                                    setSelectedRequestIdForLogs(r.id)
+                                    setIsLogOpen(true)
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">Geçmişi Görüntüle</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Geçmişi Görüntüle</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md text-red-600 hover:text-red-600"
+                                  onClick={() => {
+                                    setSelectedRequestIds(new Set([r.id]))
+                                    setIsDeleteDialogOpen(true)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Sil</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Sil</p></TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      ),
                       isCompactMode && (
                         <TableCell key="detail" className="text-center">
                           <Button
