@@ -30,12 +30,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface RequestTableProps {
   requests: Request[]
-  onAddRequest: (data: Omit<Request, "id" | "guncellemeTarihi"> & { talepNo?: string; guncelleyen?: string }) => void
+  onAddRequest: (data: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string }) => void
   onUpdateRequest: (id: string, data: Partial<Request> & { guncelleyen?: string }) => void
   onDeleteRequests: (ids: string[]) => void
+  filter: string | null
 }
 
-export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests }: RequestTableProps) {
+export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter }: RequestTableProps) {
   /* ───── state ─────────────────────────────────────────── */
   const [searchTerm, setSearchTerm] = useState("")
   const [sortColumn, setSortColumn] = useState<keyof Request | null>(null)
@@ -54,6 +55,7 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
 
   /* filters for each column */
   const [filters, setFilters] = useState<Record<keyof Request, string>>({
+    id: "",
     talepNo: "",
     talebiOlusturan: "",
     ilceAdi: "",
@@ -129,6 +131,7 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
 
   /* human headers */
   const headerMap: Record<keyof Request, string | JSX.Element> = {
+    id: "ID",
     talepNo: "Talep No",
     talebiOlusturan: "Talebi Oluşturan",
     ilceAdi: "İlçe Adı",
@@ -157,6 +160,10 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
       Object.values(r).some((v) => String(v).toLowerCase().includes(searchTerm.toLowerCase())),
     )
 
+    if (filter) {
+      list = list.filter((r) => r.degerlendirmeSonucu === filter)
+    }
+
     list = list.filter((r) =>
       (Object.keys(filters) as (keyof Request)[]).every((col) => {
         const f = filters[col]
@@ -173,7 +180,7 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
       })
     }
     return list
-  }, [requests, searchTerm, filters, sortColumn, sortDirection])
+  }, [requests, searchTerm, filters, sortColumn, sortDirection, filter])
 
   /* ───── selection helpers ─────────────────────────────── */
   const allSelected = selectedRequestIds.size === filtered.length && filtered.length > 0

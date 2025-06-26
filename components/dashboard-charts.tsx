@@ -64,92 +64,72 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
   }, [])
 
   useEffect(() => {
-    // İlçe bazlı başvuru dağılımı - Sağlam ve güvenilir yaklaşım
+    // İlçe bazlı başvuru dağılımı (Büyük/küçük harf sorununu çöz ve muhtar verisi olmadan da çalışsın)
     const ilceCounts: Record<string, number> = {}
     
-    // Sadece requests verisi varsa işle
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.ilceAdi && req.ilceAdi.trim()) {
-          const normalizedIlce = req.ilceAdi.trim().toUpperCase()
-          ilceCounts[normalizedIlce] = (ilceCounts[normalizedIlce] || 0) + 1
+    // Önce requests'teki tüm ilçeleri al ve normalize et
+    requests.forEach((req) => {
+      const normalizedIlce = req.ilceAdi.trim().toUpperCase()
+      ilceCounts[normalizedIlce] = (ilceCounts[normalizedIlce] || 0) + 1
+    })
+
+    // Muhtar verisi varsa o ilçeleri de ekle (talep olmasa bile)
+    if (!loadingMuhtarData && allMuhtarInfos.length > 0) {
+      const uniqueIlceler = [...new Set(allMuhtarInfos.map((info) => info.ilceAdi.trim().toUpperCase()))]
+      uniqueIlceler.forEach((ilce) => {
+        if (!(ilce in ilceCounts)) {
+          ilceCounts[ilce] = 0
         }
       })
     }
 
-    // Muhtar verisi varsa eksik ilçeleri de ekle (0 değeriyle)
-    if (!loadingMuhtarData && allMuhtarInfos && allMuhtarInfos.length > 0) {
-      allMuhtarInfos.forEach((info) => {
-        if (info.ilceAdi && info.ilceAdi.trim()) {
-          const normalizedIlce = info.ilceAdi.trim().toUpperCase()
-          if (!(normalizedIlce in ilceCounts)) {
-            ilceCounts[normalizedIlce] = 0
-          }
-        }
-      })
-    }
-
-    // Değerlere göre sırala (en yüksekten en düşüğe) - sadece 0'dan büyük olanlar
+    // Değerlere göre sırala (en yüksekten en düşüğe)
     const ilceDistribution = Object.entries(ilceCounts)
-      .filter(([, value]) => value > 0) // Sadece gerçek talebi olan ilçeler
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
 
     // Talep konularına göre grafik (normalize et)
     const talepKonusuCounts: Record<string, number> = {}
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.talepKonusu && req.talepKonusu.trim()) {
-          const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
-          talepKonusuCounts[normalizedKonu] = (talepKonusuCounts[normalizedKonu] || 0) + 1
-        }
-      })
-    }
+    requests.forEach((req) => {
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
+      talepKonusuCounts[normalizedKonu] = (talepKonusuCounts[normalizedKonu] || 0) + 1
+    })
     const talepKonusuDistribution = Object.entries(talepKonusuCounts).map(([name, value]) => ({ name, value }))
 
     // Değerlendirme sonuçlarına göre oranlar (normalize et)
     const degerlendirmeSonucuCounts: Record<string, number> = {}
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.degerlendirmeSonucu && req.degerlendirmeSonucu.trim()) {
-          const normalizedSonuc = req.degerlendirmeSonucu.trim()
-          degerlendirmeSonucuCounts[normalizedSonuc] = (degerlendirmeSonucuCounts[normalizedSonuc] || 0) + 1
-        }
-      })
-    }
+    requests.forEach((req) => {
+      const normalizedSonuc = req.degerlendirmeSonucu.trim()
+      degerlendirmeSonucuCounts[normalizedSonuc] = (degerlendirmeSonucuCounts[normalizedSonuc] || 0) + 1
+    })
     const degerlendirmeSonucuDistribution = Object.entries(degerlendirmeSonucuCounts).map(([name, value]) => ({
       name,
       value,
     }))
 
     // Aylık/zamansal eğilimler
-    const monthlyCounts: Record<string, number> = {}
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.talepTarihi && req.talepTarihi.trim()) {
-          const month = req.talepTarihi.substring(0, 7) // YYYY-MM
-          monthlyCounts[month] = (monthlyCounts[month] || 0) + 1
-        }
-      })
-    }
+    const monthlyCounts = requests.reduce(
+      (acc, req) => {
+        const month = req.talepTarihi.substring(0, 7) // YYYY-MM
+        acc[month] = (acc[month] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    )
     const monthlyTrends = Object.entries(monthlyCounts)
       .map(([month, count]) => ({ month, count }))
       .sort((a, b) => a.month.localeCompare(b.month))
 
-    // En çok talep gelen 10 ilçe ve talep konuları
+    // En çok talep gelen 10 ilçe ve talep konuları (büyük/küçük harf sorununu çöz)
     const ilceTopicCounts: Record<string, Record<string, number>> = {}
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.ilceAdi && req.ilceAdi.trim() && req.talepKonusu && req.talepKonusu.trim()) {
-          const normalizedIlce = req.ilceAdi.trim().toUpperCase()
-          const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
-          if (!ilceTopicCounts[normalizedIlce]) {
-            ilceTopicCounts[normalizedIlce] = {}
-          }
-          ilceTopicCounts[normalizedIlce][normalizedKonu] = (ilceTopicCounts[normalizedIlce][normalizedKonu] || 0) + 1
-        }
-      })
-    }
+    requests.forEach((req) => {
+      const normalizedIlce = req.ilceAdi.trim().toUpperCase()
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
+      if (!ilceTopicCounts[normalizedIlce]) {
+        ilceTopicCounts[normalizedIlce] = {}
+      }
+      ilceTopicCounts[normalizedIlce][normalizedKonu] = (ilceTopicCounts[normalizedIlce][normalizedKonu] || 0) + 1
+    })
 
     const top10IlceTopics = Object.entries(ilceTopicCounts)
       .map(([ilce, topics]) => ({
@@ -160,20 +140,16 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
       .sort((a, b) => b.totalRequests - a.totalRequests)
       .slice(0, 10)
 
-    // En çok talep gelen 10 mahalle ve talep konuları
+    // En çok talep gelen 10 mahalle ve talep konuları (büyük/küçük harf sorununu çöz)
     const mahalleTopicCounts: Record<string, Record<string, number>> = {}
-    if (requests && requests.length > 0) {
-      requests.forEach((req) => {
-        if (req.ilceAdi && req.ilceAdi.trim() && req.mahalleAdi && req.mahalleAdi.trim() && req.talepKonusu && req.talepKonusu.trim()) {
-          const mahalleKey = `${req.ilceAdi.trim().toUpperCase()} - ${req.mahalleAdi.trim().toUpperCase()}`
-          const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
-          if (!mahalleTopicCounts[mahalleKey]) {
-            mahalleTopicCounts[mahalleKey] = {}
-          }
-          mahalleTopicCounts[mahalleKey][normalizedKonu] = (mahalleTopicCounts[mahalleKey][normalizedKonu] || 0) + 1
-        }
-      })
-    }
+    requests.forEach((req) => {
+      const mahalleKey = `${req.ilceAdi.trim().toUpperCase()} - ${req.mahalleAdi.trim().toUpperCase()}`
+      const normalizedKonu = normalizeTalepKonusu(req.talepKonusu)
+      if (!mahalleTopicCounts[mahalleKey]) {
+        mahalleTopicCounts[mahalleKey] = {}
+      }
+      mahalleTopicCounts[mahalleKey][normalizedKonu] = (mahalleTopicCounts[mahalleKey][normalizedKonu] || 0) + 1
+    })
 
     const top10MahalleTopics = Object.entries(mahalleTopicCounts)
       .map(([mahalle, topics]) => ({
@@ -268,57 +244,46 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {chartData.ilceDistribution && chartData.ilceDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart
-                  layout="horizontal"
-                  data={chartData.ilceDistribution}
-                  margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300/50" />
-                  <XAxis type="number" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    tickLine={false} 
-                    axisLine={false} 
-                    style={{ fontSize: "10px" }} 
-                    width={75}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
-                    contentStyle={{ 
-                      borderRadius: "16px", 
-                      border: "none", 
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                      backdropFilter: "blur(20px)",
-                      backgroundColor: "rgba(255,255,255,0.95)"
-                    }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill="url(#blueGradient)" 
-                    name="Başvuru Sayısı" 
-                    radius={[0, 8, 8, 0]}
-                  />
-                  <defs>
-                    <linearGradient id="blueGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#3B82F6" />
-                      <stop offset="100%" stopColor="#60A5FA" />
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[400px] text-gray-500">
-                <div className="text-center">
-                  <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">Henüz veri bulunamadı</p>
-                  <p className="text-sm">İlçe bazlı başvuru verisi yükleniyor...</p>
-                  <p className="text-xs mt-2">Debug: {chartData.ilceDistribution?.length || 0} veri noktası</p>
-                </div>
-              </div>
-            )}
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart
+                layout="horizontal"
+                data={chartData.ilceDistribution}
+                margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300/50" />
+                <XAxis type="number" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
+                <YAxis 
+                  type="category" 
+                  dataKey="name" 
+                  tickLine={false} 
+                  axisLine={false} 
+                  style={{ fontSize: "10px" }} 
+                  width={75}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
+                  contentStyle={{ 
+                    borderRadius: "16px", 
+                    border: "none", 
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                    backdropFilter: "blur(20px)",
+                    backgroundColor: "rgba(255,255,255,0.95)"
+                  }}
+                />
+                <Bar 
+                  dataKey="value" 
+                  fill="url(#blueGradient)" 
+                  name="Başvuru Sayısı" 
+                  radius={[0, 8, 8, 0]}
+                />
+                <defs>
+                  <linearGradient id="blueGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="100%" stopColor="#60A5FA" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 

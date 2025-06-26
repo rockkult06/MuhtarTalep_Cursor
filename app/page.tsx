@@ -10,6 +10,7 @@ export default function HomePage() {
   const [requests, setRequests] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState<string | null>(null)
 
   const fetchRequests = async () => {
     setLoading(true)
@@ -30,10 +31,10 @@ export default function HomePage() {
   }, [])
 
   const handleAddRequest = async (
-    newRequestData: Omit<Request, "id" | "guncellemeTarihi"> & { talepNo?: string; guncelleyen?: string },
+    newRequestData: Omit<Request, "id" | "talepNo" | "guncellemeTarihi"> & { guncelleyen?: string },
   ) => {
     try {
-      const addedRequest = await addRequest(newRequestData)
+      const addedRequest = await addRequest({ ...newRequestData, talepNo: "" })
       if (addedRequest) {
         setRequests((prev) => [...prev, addedRequest])
       }
@@ -106,12 +107,13 @@ export default function HomePage() {
       <Header />
       <main className="flex-1 p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Talepler</h1>
-        <KPICards requests={requests} />
+        <KPICards requests={requests} onFilter={setFilter} />
         <RequestTable
           requests={requests}
           onAddRequest={handleAddRequest}
           onUpdateRequest={handleUpdateRequest}
           onDeleteRequests={handleDeleteRequests}
+          filter={filter}
         />
       </main>
     </div>

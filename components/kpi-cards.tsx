@@ -1,72 +1,69 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Request } from "@/lib/data"
-import { FileText, CheckCircle, XCircle, Clock, Search } from "lucide-react"
+import { ClipboardList, ThumbsUp, ThumbsDown, HelpCircle, Search } from "lucide-react"
 
 interface KPICardsProps {
-  requests: Request[]
+  requests: Request[],
+  onFilter: (filter: string | null) => void
 }
 
-export function KPICards({ requests }: KPICardsProps) {
+export function KPICards({ requests, onFilter }: KPICardsProps) {
   // KPI hesaplamaları
-  const toplamBasvuru = requests.length
-  const olumlu = requests.filter(req => req.degerlendirmeSonucu === "Olumlu").length
-  const olumsuz = requests.filter(req => req.degerlendirmeSonucu === "Olumsuz").length
-  const degerlendirilecek = requests.filter(req => req.degerlendirmeSonucu === "Değerlendirilecek").length
-  const inceleniyor = requests.filter(req => req.degerlendirmeSonucu === "İnceleniyor").length
+  const totalRequests = requests.length
+  const approvedRequests = requests.filter((req) => req.degerlendirmeSonucu === "Olumlu").length
+  const rejectedRequests = requests.filter((req) => req.degerlendirmeSonucu === "Olumsuz").length
+  const pendingRequests = requests.filter((req) => req.degerlendirmeSonucu === "Değerlendirilecek").length
+  const inProgressRequests = requests.filter((req) => req.degerlendirmeSonucu === "İnceleniyor").length
 
   const kpiData = [
     {
       title: "Toplam Başvuru",
-      value: toplamBasvuru,
-      icon: FileText,
+      value: totalRequests,
+      icon: ClipboardList,
       color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      filter: null,
     },
     {
       title: "Olumlu",
-      value: olumlu,
-      icon: CheckCircle,
+      value: approvedRequests,
+      icon: ThumbsUp,
       color: "text-green-600",
-      bgColor: "bg-green-50",
+      filter: "Olumlu",
     },
     {
       title: "Olumsuz",
-      value: olumsuz,
-      icon: XCircle,
+      value: rejectedRequests,
+      icon: ThumbsDown,
       color: "text-red-600",
-      bgColor: "bg-red-50",
+      filter: "Olumsuz",
     },
     {
       title: "Değerlendirilecek",
-      value: degerlendirilecek,
-      icon: Clock,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      value: pendingRequests,
+      icon: HelpCircle,
+      color: "text-yellow-600",
+      filter: "Değerlendirilecek",
     },
     {
       title: "İnceleniyor",
-      value: inceleniyor,
+      value: inProgressRequests,
       icon: Search,
       color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      filter: "İnceleniyor",
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {kpiData.map((kpi, index) => {
-        const IconComponent = kpi.icon
+        const Icon = kpi.icon
         return (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
-                  <IconComponent className={`h-5 w-5 ${kpi.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
-                </div>
+          <Card key={index} onClick={() => onFilter(kpi.filter)} className="cursor-pointer">
+            <CardContent className="flex items-center p-6">
+              <Icon className={`w-8 h-8 ${kpi.color} mr-4`} />
+              <div>
+                <p className="text-sm text-muted-foreground">{kpi.title}</p>
+                <h3 className="text-2xl font-bold">{kpi.value}</h3>
               </div>
             </CardContent>
           </Card>
