@@ -17,10 +17,11 @@ import {
   LineChart,
   Line,
 } from "recharts"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { getMuhtarData, normalizeTalepKonusu } from "@/lib/data"
 import { Hash, MapPin, Tag, TrendingUp, CheckCircle, Users, ThumbsUp, ThumbsDown, Clock, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface DashboardChartsProps {
   requests: Request[]
@@ -170,6 +171,27 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
     })
   }, [requests, loadingMuhtarData, allMuhtarInfos])
 
+  const districtData: { ilce: string; total: number; olumlu: number; olumsuz: number; degerlendirilecek: number; inceleniyor: number }[] = useMemo(() => {
+    const data: Record<string, { total: number; olumlu: number; olumsuz: number; degerlendirilecek: number; inceleniyor: number }> = {}
+
+    requests.forEach((req) => {
+      const ilce = req.ilceAdi
+      const sonuc = req.degerlendirmeSonucu.trim()
+
+      if (!data[ilce]) {
+        data[ilce] = { total: 0, olumlu: 0, olumsuz: 0, degerlendirilecek: 0, inceleniyor: 0 }
+      }
+
+      data[ilce].total += 1
+      if (sonuc === "Olumlu") data[ilce].olumlu += 1
+      if (sonuc === "Olumsuz") data[ilce].olumsuz += 1
+      if (sonuc === "Değerlendirilecek") data[ilce].degerlendirilecek += 1
+      if (sonuc === "İnceleniyor") data[ilce].inceleniyor += 1
+    })
+
+    return Object.entries(data).map(([ilce, counts]) => ({ ilce, ...counts }))
+  }, [requests])
+
   if (loadingMuhtarData) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -244,46 +266,30 @@ export function DashboardCharts({ requests }: DashboardChartsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart
-                layout="horizontal"
-                data={chartData.ilceDistribution}
-                margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300/50" />
-                <XAxis type="number" tickLine={false} axisLine={false} style={{ fontSize: "12px" }} />
-                <YAxis 
-                  type="category" 
-                  dataKey="name" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  style={{ fontSize: "10px" }} 
-                  width={75}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
-                  contentStyle={{ 
-                    borderRadius: "16px", 
-                    border: "none", 
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    backdropFilter: "blur(20px)",
-                    backgroundColor: "rgba(255,255,255,0.95)"
-                  }}
-                />
-                <Bar 
-                  dataKey="value" 
-                  fill="url(#blueGradient)" 
-                  name="Başvuru Sayısı" 
-                  radius={[0, 8, 8, 0]}
-                />
-                <defs>
-                  <linearGradient id="blueGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#60A5FA" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>İlçe Adı</TableHead>
+                  <TableHead>Toplam Talep Sayısı</TableHead>
+                  <TableHead>Olumlu</TableHead>
+                  <TableHead>Olumsuz</TableHead>
+                  <TableHead>Değerlendirilecek</TableHead>
+                  <TableHead>İnceleniyor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {districtData.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{row.ilce}</TableCell>
+                    <TableCell>{row.total}</TableCell>
+                    <TableCell>{row.olumlu}</TableCell>
+                    <TableCell>{row.olumsuz}</TableCell>
+                    <TableCell>{row.degerlendirilecek}</TableCell>
+                    <TableCell>{row.inceleniyor}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
