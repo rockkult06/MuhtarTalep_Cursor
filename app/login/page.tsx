@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -25,9 +26,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <div className="absolute top-16 text-center animate-pulse">
+        <h1 className="text-6xl font-bold text-gray-800 dark:text-gray-200 tracking-wider">MTYS</h1>
+        <p className="text-xl text-gray-600 dark:text-gray-400 mt-2">Muhtar Talep Yönetim Sistemi</p>
+      </div>
+
+      <Card className="w-full max-w-sm mx-auto shadow-2xl">
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl">Giriş Yap</CardTitle>
           <CardDescription>Devam etmek için lütfen giriş yapın.</CardDescription>
         </CardHeader>
@@ -64,6 +70,9 @@ export default function LoginPage() {
           </Button>
         </CardFooter>
       </Card>
-    </main>
+      <footer className="absolute bottom-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        © Developed by Ulaşım Planlama Dairesi Başkanlığı/2025
+      </footer>
+    </div>
   )
 } 
