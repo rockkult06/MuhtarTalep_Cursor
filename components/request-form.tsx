@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { type Request, type MuhtarInfo, dropdownOptions, getMuhtarData } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
 
 type FormData = Omit<
   Request,
@@ -22,7 +23,7 @@ type FormData = Omit<
 
 interface RequestFormProps {
   initialData?: Request;
-  onSave: (data: FormData) => void;
+  onSave: (data: Partial<Request>) => void;
   onClose: () => void;
 }
 
@@ -61,6 +62,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
   const [errorMuhtarData, setErrorMuhtarData] = useState<string | null>(null)
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchMuhtarData = async () => {
@@ -150,7 +152,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     onClose();
   };
 
-  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))]
+  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi.toUpperCase()))].sort();
 
   if (loadingMuhtarData) {
     return <div className="p-4 text-center">Muhtar bilgileri yükleniyor...</div>
