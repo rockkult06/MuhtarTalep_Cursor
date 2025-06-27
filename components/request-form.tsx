@@ -202,8 +202,11 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     }
   };
 
-  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))]
-    .sort((a, b) => a.localeCompare(b, 'tr-TR'))
+  const uniqueIlceler = [
+    ...new Set(
+      muhtarInfos.map((info) => String(info.ilceAdi ?? "").trim().toLocaleUpperCase('tr-TR'))
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'tr-TR'))
 
   if (loadingMuhtarData) {
     return <div className="p-4 text-center">Muhtar bilgileri yükleniyor...</div>

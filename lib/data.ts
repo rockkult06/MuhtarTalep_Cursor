@@ -308,10 +308,10 @@ export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
   }
   // Convert snake_case to camelCase and convert district names to uppercase
   return data.map((item) => ({
-    ilceAdi: item.ilce_adi.toLocaleUpperCase('tr-TR'),
-    mahalleAdi: item.mahalle_adi,
-    muhtarAdi: item.muhtar_adi,
-    muhtarTelefonu: item.muhtar_telefonu,
+    ilceAdi: String(item.ilce_adi ?? "").trim().toLocaleUpperCase('tr-TR'),
+    mahalleAdi: String(item.mahalle_adi ?? "").trim().toLocaleUpperCase('tr-TR'),
+    muhtarAdi: String(item.muhtar_adi ?? "").trim(),
+    muhtarTelefonu: String(item.muhtar_telefonu ?? "").trim(),
   }))
 }
 
