@@ -224,7 +224,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <SelectTrigger className={cn(validationErrors.ilceAdi && "border-red-500")}>
               <SelectValue placeholder="İlçe Seçin" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[80vh] overflow-y-auto">
               {uniqueIlceler.map((ilce) => (
                 <SelectItem key={ilce} value={ilce}>
                   {ilce}
@@ -251,7 +251,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <SelectTrigger className={cn(validationErrors.mahalleAdi && "border-red-500")}>
               <SelectValue placeholder="Mahalle Seçin" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[80vh] overflow-y-auto">
               {filteredMahalleler.map((mahalle) => (
                 <SelectItem key={mahalle} value={mahalle}>
                   {mahalle}
