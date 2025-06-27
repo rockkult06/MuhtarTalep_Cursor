@@ -14,10 +14,11 @@ import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { type Request, type MuhtarInfo, dropdownOptions, getMuhtarData } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
 
 type FormData = Omit<
   Request,
-  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen"
+  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan"
 >;
 
 interface RequestFormProps {
@@ -56,6 +57,7 @@ const getInitialFormData = (initialData?: Request): FormData => {
 };
 
 export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) {
+  const { user } = useAuth()
   const [formData, setFormData] = useState<FormData>(() => getInitialFormData(initialData));
   const [muhtarInfos, setMuhtarInfos] = useState<MuhtarInfo[]>([])
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
@@ -184,7 +186,11 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     e.preventDefault();
     
     if (validateForm()) {
-      onSave(formData);
+      // Güncelleyen bilgisini otomatik olarak ekle
+      onSave({
+        ...formData,
+        guncelleyen: user?.username || "Sistem"
+      });
       onClose();
     } else {
       // Hata mesajını göster
@@ -403,12 +409,6 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
             <p className="text-sm text-red-500 mt-1">{validationErrors.degerlendirmeSonucu}</p>
           )}
         </div>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="guncelleyen" className="text-right">
-          Güncelleyen (İsteğe Bağlı)
-        </Label>
-        <Input id="guncelleyen" value={formData.guncelleyen} onChange={handleChange} className="col-span-3" />
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="outline" onClick={onClose} className="bg-white text-black">
