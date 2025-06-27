@@ -305,9 +305,9 @@ export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
     console.error("Error fetching muhtar data:", error)
     return []
   }
-  // Convert snake_case to camelCase and preserve original case
+  // Convert snake_case to camelCase and convert district names to uppercase
   return data.map((item) => ({
-    ilceAdi: item.ilce_adi,
+    ilceAdi: item.ilce_adi.toLocaleUpperCase('tr-TR'),
     mahalleAdi: item.mahalle_adi,
     muhtarAdi: item.muhtar_adi,
     muhtarTelefonu: item.muhtar_telefonu,
@@ -324,7 +324,7 @@ export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
 
   // Insert new muhtar data
   const formattedData = data.map((m) => ({
-    ilce_adi: m.ilceAdi.trim(),  // İlçe adını olduğu gibi kaydet
+    ilce_adi: m.ilceAdi.trim().toLocaleUpperCase('tr-TR'),  // İlçe adını büyük harfe çevir
     mahalle_adi: m.mahalleAdi.trim(),  // Mahalle adını olduğu gibi kaydet
     muhtar_adi: m.muhtarAdi?.trim() || "",
     muhtar_telefonu: m.muhtarTelefonu?.trim() || "",
@@ -461,6 +461,53 @@ export const updateTalepKonulari = async (): Promise<void> => {
     
   } catch (error) {
     console.error("Talep konuları güncellenirken genel hata:", error)
+  }
+}
+
+// İlçe adlarını büyük harfe çevirme fonksiyonu
+export const updateDistrictNames = async (): Promise<void> => {
+  try {
+    console.log("İlçe adları güncelleniyor...")
+    
+    // Tüm muhtar verilerini al
+    const { data: muhtarData, error: fetchError } = await supabase
+      .from("muhtar_info")
+      .select("ilce_adi")
+      .order("ilce_adi")
+    
+    if (fetchError) {
+      console.error("Muhtar verileri alınırken hata:", fetchError)
+      return
+    }
+    
+    if (!muhtarData || muhtarData.length === 0) {
+      console.log("Güncellenecek ilçe bulunamadı")
+      return
+    }
+    
+    // Her ilçe adını büyük harfe çevir ve güncelle
+    const updatePromises = muhtarData.map(async (data) => {
+      const upperCaseDistrict = data.ilce_adi.toLocaleUpperCase('tr-TR')
+      
+      if (upperCaseDistrict !== data.ilce_adi) {
+        console.log(`Güncelleniyor: "${data.ilce_adi}" -> "${upperCaseDistrict}"`)
+        
+        const { error } = await supabase
+          .from("muhtar_info")
+          .update({ ilce_adi: upperCaseDistrict })
+          .eq("ilce_adi", data.ilce_adi)
+        
+        if (error) {
+          console.error(`İlçe "${data.ilce_adi}" güncellenirken hata:`, error)
+        }
+      }
+    })
+    
+    await Promise.all(updatePromises)
+    console.log("İlçe adları başarıyla güncellendi!")
+    
+  } catch (error) {
+    console.error("İlçe adları güncellenirken genel hata:", error)
   }
 }
 
