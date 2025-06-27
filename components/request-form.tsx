@@ -133,6 +133,12 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     }
   }, [formData.ilceAdi, formData.mahalleAdi, muhtarInfos])
 
+  useEffect(() => {
+    if (muhtarInfos.length > 0) {
+      console.log("Tüm ilçeler:", muhtarInfos.map(m => m.ilceAdi));
+    }
+  }, [muhtarInfos]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
