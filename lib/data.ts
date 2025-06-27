@@ -324,10 +324,10 @@ export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
 
   // Insert new muhtar data
   const formattedData = data.map((m) => ({
-    ilce_adi: m.ilceAdi.trim().toLocaleUpperCase('tr-TR'),  // İlçe adını büyük harfe çevir
-    mahalle_adi: m.mahalleAdi.trim(),  // Mahalle adını olduğu gibi kaydet
-    muhtar_adi: m.muhtarAdi?.trim() || "",
-    muhtar_telefonu: m.muhtarTelefonu?.trim() || "",
+    ilce_adi: String(m.ilceAdi ?? "").trim().toLocaleUpperCase('tr-TR'),  // İlçe adını büyük harfe çevir
+    mahalle_adi: String(m.mahalleAdi ?? "").trim(),  // Mahalle adını olduğu gibi kaydet
+    muhtar_adi: String(m.muhtarAdi ?? "").trim(),
+    muhtar_telefonu: String(m.muhtarTelefonu ?? "").trim(),
   }))
   const { error: insertError } = await supabase.from("muhtar_info").insert(formattedData)
   if (insertError) {

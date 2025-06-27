@@ -149,7 +149,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
           })()
 
     const headers = parseLine(headerRaw, delimiter).map((h) =>
-      h
+      String(h)
         .trim()
         .replace(/^"|"$/g, "")
         .replace(/\s*\n\s*/g, " "),
@@ -157,7 +157,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
 
     const dataRows = dataRaw
       .split("\n")
-      .filter((l) => l.trim() !== "")
+      .filter((l) => typeof l === "string" && l.trim() !== "")
       .map((line) => {
         const values = parseLine(line, delimiter)
         const row: Record<string, string> = {}
@@ -234,7 +234,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
           const dataRows = json.slice(1)
 
           // Normalize headers: trim, replace newlines with spaces
-          const headers = rawHeaders.map((h) => h.trim().replace(/\s*\n\s*/g, " "))
+          const headers = rawHeaders.map((h) => String(h).trim().replace(/\s*\n\s*/g, " "))
 
           const processedData = dataRows.map((row) => {
             const newRow: Record<string, any> = {}
