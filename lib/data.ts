@@ -299,21 +299,33 @@ export const deleteRequests = async (ids: string[]): Promise<boolean> => {
   }
 }
 
+// lib/data.ts
 export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
-  // Supabase varsayılan olarak 0-999 arası 1000 kayıt döndürür; daha fazla veri çekmek için limit veya range belirt
-  const { data, error } = await supabase.from("muhtar_info").select("*").limit(10000)
-  if (error) {
-    console.error("Error fetching muhtar data:", error)
-    return []
+  let allData: any[] = [];
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("muhtar_info")
+      .select("*")
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error("Error fetching muhtar data:", error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data);
+    if (data.length < pageSize) break; // Son sayfa
+    from += pageSize;
   }
-  // Convert snake_case to camelCase and convert district names to uppercase
-  return data.map((item) => ({
+  // Normalizasyon
+  return allData.map((item) => ({
     ilceAdi: String(item.ilce_adi ?? "").trim().toLocaleUpperCase('tr-TR'),
     mahalleAdi: String(item.mahalle_adi ?? "").trim().toLocaleUpperCase('tr-TR'),
     muhtarAdi: String(item.muhtar_adi ?? "").trim(),
     muhtarTelefonu: String(item.muhtar_telefonu ?? "").trim(),
-  }))
-}
+  }));
+};
 
 export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
   // Clear existing muhtar data
