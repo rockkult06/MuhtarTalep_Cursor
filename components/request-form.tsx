@@ -28,16 +28,16 @@ interface RequestFormProps {
 
 const getInitialFormData = (initialData?: Request): FormData => {
   const defaults: FormData = {
-    ilceAdi: "",
-    mahalleAdi: "",
-    muhtarAdi: "",
-    muhtarTelefonu: "",
-    talebinGelisSekli: "",
-    talepTarihi: format(new Date(), "yyyy-MM-dd"),
-    talepKonusu: "",
-    aciklama: "",
-    degerlendirme: "",
-    degerlendirmeSonucu: "",
+      ilceAdi: "",
+      mahalleAdi: "",
+      muhtarAdi: "",
+      muhtarTelefonu: "",
+      talebinGelisSekli: "",
+      talepTarihi: format(new Date(), "yyyy-MM-dd"),
+      talepKonusu: "",
+      aciklama: "",
+      degerlendirme: "",
+      degerlendirmeSonucu: "",
   };
 
   if (!initialData) {

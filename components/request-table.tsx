@@ -37,11 +37,9 @@ interface RequestTableProps {
   onDeleteRequests: (ids: string[]) => void
   filter: string | null
   role: Role
-  loading: boolean
-  error: string | null
 }
 
-export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter, role, loading, error }: RequestTableProps) {
+export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDeleteRequests, filter, role }: RequestTableProps) {
   /* ───── state ─────────────────────────────────────────── */
   const [searchTerm, setSearchTerm] = useState("")
   const [sortColumn, setSortColumn] = useState<keyof Request | null>("talepTarihi")
@@ -264,10 +262,6 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
   }
 
   /* ───── render ────────────────────────────────────────── */
-  if (error) {
-    return <div className="text-red-500 text-center p-4">{error}</div>;
-  }
-
   return (
     <TooltipProvider>
       <div className="p-6 md:p-8 animate-fade-in">
@@ -374,332 +368,326 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
           </div>
         </div>
         {/* actual table */}
-        <div className="border rounded-lg w-full">
-          <div className="relative w-full overflow-auto" style={{ maxHeight: "calc(100vh - 250px)" }}>
-            <Table className="table-zebra">
+        <div 
+          ref={tableRef} 
+          onScroll={handleScroll} 
+          className="relative overflow-auto border rounded-lg"
+          style={{ maxHeight: "calc(100vh - 250px)" }}
+        >
+          <Table className="table-zebra">
+            {" "}
+            {/* Zebra çizgili tablo */}
+            <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
               {" "}
-              {/* Zebra çizgili tablo */}
-              <TableHeader className="sticky top-0 bg-white dark:bg-gray-900 z-10">
-                {" "}
-                {/* Sticky başlık */}
-                {/* === HEADER ROW === */}
-                <TableRow>
-                  {[
-                    role !== 'viewer' && (
-                      <TableHead key="selectAll" className="w-[50px] text-center">
-                        <Checkbox
-                          checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                          onCheckedChange={(c) => toggleSelectAll(c === true)}
-                        />
-                      </TableHead>
-                    ),
-                    /* dynamic headers */
-                    ...visibleColumns.map((col) => (
-                      <TableHead key={col}>
-                        <Button variant="ghost" onClick={() => handleSort(col)} className="px-2 py-1 h-auto">
-                          {" "}
-                          {/* Daha kompakt buton */}
-                          {getHeader(col)}
-                          <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" /> {/* Daha küçük ikon */}
-                        </Button>
-                      </TableHead>
-                    )),
-                    role !== 'viewer' && (
-                      <TableHead key="actions" className="text-right">
-                        İşlemler
-                      </TableHead>
-                    ),
-                    /* compact detail */
-                    isCompactMode && (
-                      <TableHead key="detail" className="w-[80px] text-center">
-                        Detay
-                      </TableHead>
-                    ),
-                  ]}
-                </TableRow>
-                {/* === FILTER ROW === */}
-                <TableRow>
-                  {[
-                    role !== 'viewer' && (
-                      <TableHead key="empty" className="w-[50px]" />
-                    ),
-                    ...visibleColumns.map((col) => (
-                      <TableHead key={`filter-${col}`} className="py-2">
+              {/* Sticky başlık */}
+              {/* === HEADER ROW === */}
+              <TableRow>
+                {[
+                  role !== 'viewer' && (
+                    <TableHead key="selectAll" className="w-[50px] text-center">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={(c) => toggleSelectAll(c === true)}
+                      />
+                    </TableHead>
+                  ),
+                  /* dynamic headers */
+                  ...visibleColumns.map((col) => (
+                    <TableHead key={col}>
+                      <Button variant="ghost" onClick={() => handleSort(col)} className="px-2 py-1 h-auto">
                         {" "}
-                        {/* Daha kompakt filtre satırı */}
-                        {(() => {
-                          /* render select / input per column */
-                          const commonProps = {
-                            className: "w-full h-8 text-sm rounded-md", // Daha kompakt input/select
-                          }
-                          switch (col) {
-                            case "ilceAdi":
-                              return (
-                                <Select
-                                  value={filters[col]}
-                                  onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                                >
-                                  <SelectTrigger {...commonProps}>
-                                    <SelectValue placeholder="İlçe Seç" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">Tümü</SelectItem>
-                                    {uniqueIlceler.map((o) => (
-                                      <SelectItem key={o} value={o}>
-                                        {o}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )
-                            case "mahalleAdi":
-                              return (
-                                <Input
-                                  {...commonProps}
-                                  placeholder="Mahalle ara..."
-                                  value={filters[col]}
-                                  onChange={(e) => handleFilterChange(col, e.target.value)}
-                                />
-                              )
-                            case "talebinGelisSekli":
-                              return (
-                                <Select
-                                  value={filters[col]}
-                                  onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                                >
-                                  <SelectTrigger {...commonProps}>
-                                    <SelectValue placeholder="Şekil Seç" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">Tümü</SelectItem>
-                                    {uniqueTalebinGelisSekli.map((o) => (
-                                      <SelectItem key={o} value={o}>
-                                        {o}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )
-                            case "talepKonusu":
-                              return (
-                                <Select
-                                  value={filters[col]}
-                                  onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                                >
-                                  <SelectTrigger {...commonProps}>
-                                    <SelectValue placeholder="Konu Seç" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">Tümü</SelectItem>
-                                    {uniqueTalepKonusu.map((o) => (
-                                      <SelectItem key={o} value={o}>
-                                        {o}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )
-                            case "degerlendirmeSonucu":
-                              return (
-                                <Select
-                                  value={filters[col]}
-                                  onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                                >
-                                  <SelectTrigger {...commonProps}>
-                                    <SelectValue placeholder="Sonuç Seç" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">Tümü</SelectItem>
-                                    {uniqueDegSonucu.map((o) => (
-                                      <SelectItem key={o} value={o}>
-                                        {o}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )
-                            case "guncelleyen":
-                              return (
-                                <Select
-                                  value={filters[col]}
-                                  onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
-                                >
-                                  <SelectTrigger {...commonProps}>
-                                    <SelectValue placeholder="Güncelleyen" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">Tümü</SelectItem>
-                                    {uniqueGuncelleyen.map((o) => (
-                                      <SelectItem key={o} value={o}>
-                                        {o}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )
-                            default:
-                              return (
-                                <Input
-                                  {...commonProps}
-                                  placeholder="Ara..."
-                                  value={filters[col]}
-                                  onChange={(e) => handleFilterChange(col, e.target.value)}
-                                />
-                              )
-                          }
-                        })()}
-                      </TableHead>
-                    )),
-                    role !== 'viewer' && (
-                      <TableHead key="actions-empty" className="text-right" />
-                    ),
-                    isCompactMode && <TableHead key="detail-empty" className="w-[80px]" />,
-                  ]}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center">
-                      <div className="flex justify-center items-center p-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span className="ml-2">Talepler yükleniyor...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : requests.length > 0 ? (
-                  filtered.map((r) => (
-                    <Fragment key={r.id}>
-                      {/* MAIN ROW */}
-                      <TableRow className="hover:bg-muted/50 transition-colors">
-                        {" "}
-                        {/* Satır vurgusu */}
-                        {[
-                          role !== 'viewer' && (
-                            <TableCell key="sel" className="text-center">
-                              <Checkbox
-                                checked={selectedRequestIds.has(r.id)}
-                                onCheckedChange={(c) => toggleSelectOne(r.id, c as boolean)}
-                              />
-                            </TableCell>
-                          ),
-                          ...visibleColumns.map((col) => <TableCell key={col}>{r[col]}</TableCell>),
-                          role !== 'viewer' && (
-                            <TableCell key="actions" className="text-right">
-                              <div className="flex justify-end gap-2">
-                                {" "}
-                                {/* İkonlu butonlar */}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-md"
-                                      onClick={() => {
-                                        setSelectedRequest(r)
-                                        setIsFormOpen(true)
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                      <span className="sr-only">Düzenle</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Düzenle</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-md"
-                                      onClick={() => {
-                                        setSelectedRequestIdForLogs(r.id)
-                                        setIsLogOpen(true)
-                                      }}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      <span className="sr-only">Geçmişi Görüntüle</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Geçmişi Görüntüle</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-md text-red-600 hover:text-red-600"
-                                      onClick={() => {
-                                        setSelectedRequestIds(new Set([r.id]))
-                                        setIsDeleteDialogOpen(true)
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      <span className="sr-only">Sil</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Sil</p></TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </TableCell>
-                          ),
-                          isCompactMode && (
-                            <TableCell key="detail" className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setOpenRowId(openRowId === r.id ? null : r.id)}
+                        {/* Daha kompakt buton */}
+                        {getHeader(col)}
+                        <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" /> {/* Daha küçük ikon */}
+                      </Button>
+                    </TableHead>
+                  )),
+                  role !== 'viewer' && (
+                    <TableHead key="actions" className="text-right">
+                      İşlemler
+                    </TableHead>
+                  ),
+                  /* compact detail */
+                  isCompactMode && (
+                    <TableHead key="detail" className="w-[80px] text-center">
+                      Detay
+                    </TableHead>
+                  ),
+                ]}
+              </TableRow>
+              {/* === FILTER ROW === */}
+              <TableRow>
+                {[
+                  role !== 'viewer' && (
+                    <TableHead key="empty" className="w-[50px]" />
+                  ),
+                  ...visibleColumns.map((col) => (
+                    <TableHead key={`filter-${col}`} className="py-2">
+                      {" "}
+                      {/* Daha kompakt filtre satırı */}
+                      {(() => {
+                        /* render select / input per column */
+                        const commonProps = {
+                          className: "w-full h-8 text-sm rounded-md", // Daha kompakt input/select
+                        }
+                        switch (col) {
+                          case "ilceAdi":
+                            return (
+                              <Select
+                                value={filters[col]}
+                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
                               >
-                                <ChevronDown
-                                  className={`h-4 w-4 transition-transform ${openRowId === r.id ? "rotate-180" : ""}`}
-                                />
-                              </Button>
-                            </TableCell>
-                          ),
-                        ]}
-                      </TableRow>
+                                <SelectTrigger {...commonProps}>
+                                  <SelectValue placeholder="İlçe Seç" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tümü</SelectItem>
+                                  {uniqueIlceler.map((o) => (
+                                    <SelectItem key={o} value={o}>
+                                      {o}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          case "mahalleAdi":
+                            return (
+                              <Input
+                                {...commonProps}
+                                placeholder="Mahalle ara..."
+                                value={filters[col]}
+                                onChange={(e) => handleFilterChange(col, e.target.value)}
+                              />
+                            )
+                          case "talebinGelisSekli":
+                            return (
+                              <Select
+                                value={filters[col]}
+                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
+                              >
+                                <SelectTrigger {...commonProps}>
+                                  <SelectValue placeholder="Şekil Seç" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tümü</SelectItem>
+                                  {uniqueTalebinGelisSekli.map((o) => (
+                                    <SelectItem key={o} value={o}>
+                                      {o}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          case "talepKonusu":
+                            return (
+                              <Select
+                                value={filters[col]}
+                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
+                              >
+                                <SelectTrigger {...commonProps}>
+                                  <SelectValue placeholder="Konu Seç" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tümü</SelectItem>
+                                  {uniqueTalepKonusu.map((o) => (
+                                    <SelectItem key={o} value={o}>
+                                      {o}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          case "degerlendirmeSonucu":
+                            return (
+                              <Select
+                                value={filters[col]}
+                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
+                              >
+                                <SelectTrigger {...commonProps}>
+                                  <SelectValue placeholder="Sonuç Seç" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tümü</SelectItem>
+                                  {uniqueDegSonucu.map((o) => (
+                                    <SelectItem key={o} value={o}>
+                                      {o}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          case "guncelleyen":
+                            return (
+                              <Select
+                                value={filters[col]}
+                                onValueChange={(v: string) => handleFilterChange(col, v === "all" ? "" : v)}
+                              >
+                                <SelectTrigger {...commonProps}>
+                                  <SelectValue placeholder="Güncelleyen" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tümü</SelectItem>
+                                  {uniqueGuncelleyen.map((o) => (
+                                    <SelectItem key={o} value={o}>
+                                      {o}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          default:
+                            return (
+                              <Input
+                                {...commonProps}
+                                placeholder="Ara..."
+                                value={filters[col]}
+                                onChange={(e) => handleFilterChange(col, e.target.value)}
+                              />
+                            )
+                        }
+                      })()}
+                    </TableHead>
+                  )),
+                  role !== 'viewer' && (
+                    <TableHead key="actions-empty" className="text-right" />
+                  ),
+                  isCompactMode && <TableHead key="detail-empty" className="w-[80px]" />,
+                ]}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={visibleColumns.length + (isCompactMode ? 3 : 2)} className="h-24 text-center">
+                    Hiç talep bulunamadı.
+                  </TableCell>
+                </TableRow>
+              )}
 
-                      {/* EXPANDED ROW (only compact) */}
-                      {isCompactMode && openRowId === r.id && (
-                        <TableRow key={`${r.id}-detail`}>
-                          <TableCell colSpan={visibleColumns.length + 2} className="py-0 px-0 bg-muted/50 border-t">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                              {fullCols
-                                .filter((c) => !compactCols.includes(c))
-                                .map((c) => (
-                                  <div key={c}>
-                                    <p className="text-sm font-medium text-muted-foreground">{headerMap[c]}:</p>
-                                    <p className="text-sm">{r[c]}</p>
-                                  </div>
-                                ))}
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground">Muhtar Adı:</p>
-                                <p className="text-sm">{r.muhtarAdi}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground">Muhtar Telefonu:</p>
-                                <p className="text-sm">{r.muhtarTelefonu}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground">Güncelleyen:</p>
-                                <p className="text-sm">{r.guncelleyen || "Belirtilmemiş"}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Fragment>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center">
-                      Gösterilecek talep bulunamadı.
-                    </TableCell>
+              {filtered.map((r) => (
+                <Fragment key={r.id}>
+                  {/* MAIN ROW */}
+                  <TableRow className="hover:bg-muted/50 transition-colors">
+                    {" "}
+                    {/* Satır vurgusu */}
+                    {[
+                      role !== 'viewer' && (
+                        <TableCell key="sel" className="text-center">
+                          <Checkbox
+                            checked={selectedRequestIds.has(r.id)}
+                            onCheckedChange={(c) => toggleSelectOne(r.id, c as boolean)}
+                          />
+                        </TableCell>
+                      ),
+                      ...visibleColumns.map((col) => <TableCell key={col}>{r[col]}</TableCell>),
+                      role !== 'viewer' && (
+                        <TableCell key="actions" className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {" "}
+                            {/* İkonlu butonlar */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md"
+                                  onClick={() => {
+                                    setSelectedRequest(r)
+                                    setIsFormOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Düzenle</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Düzenle</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md"
+                                  onClick={() => {
+                                    setSelectedRequestIdForLogs(r.id)
+                                    setIsLogOpen(true)
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">Geçmişi Görüntüle</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Geçmişi Görüntüle</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-md text-red-600 hover:text-red-600"
+                                  onClick={() => {
+                                    setSelectedRequestIds(new Set([r.id]))
+                                    setIsDeleteDialogOpen(true)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Sil</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Sil</p></TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      ),
+                      isCompactMode && (
+                        <TableCell key="detail" className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setOpenRowId(openRowId === r.id ? null : r.id)}
+                          >
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${openRowId === r.id ? "rotate-180" : ""}`}
+                            />
+                          </Button>
+                        </TableCell>
+                      ),
+                    ]}
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+
+                  {/* EXPANDED ROW (only compact) */}
+                  {isCompactMode && openRowId === r.id && (
+                    <TableRow key={`${r.id}-detail`}>
+                      <TableCell colSpan={visibleColumns.length + 2} className="py-0 px-0 bg-muted/50 border-t">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                          {fullCols
+                            .filter((c) => !compactCols.includes(c))
+                            .map((c) => (
+                              <div key={c}>
+                                <p className="text-sm font-medium text-muted-foreground">{headerMap[c]}:</p>
+                                <p className="text-sm">{r[c]}</p>
+                              </div>
+                            ))}
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Muhtar Adı:</p>
+                            <p className="text-sm">{r.muhtarAdi}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Muhtar Telefonu:</p>
+                            <p className="text-sm">{r.muhtarTelefonu}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Güncelleyen:</p>
+                            <p className="text-sm">{r.guncelleyen || "Belirtilmemiş"}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </TooltipProvider>

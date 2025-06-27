@@ -46,7 +46,7 @@ function UserActivityTable({ requests, logs }: { requests: Request[], logs: LogE
 
   }, [requests, logs]);
 
-  return (
+    return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -78,7 +78,7 @@ function UserActivityTable({ requests, logs }: { requests: Request[], logs: LogE
                 )}
             </TableBody>
             </Table>
-        </div>
+      </div>
       </CardContent>
     </Card>
   )
@@ -117,7 +117,7 @@ export function DashboardCharts({ requests, logs }: DashboardChartsProps) {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><MapPin/> İlçe Bazlı Başvuru Dağılımı</CardTitle></CardHeader>
-                <CardContent>
+          <CardContent>
                     <div className="max-h-96 overflow-y-auto">
                         <Table>
                             <TableHeader><TableRow><TableHead>İlçe</TableHead><TableHead className="text-right">Talep Sayısı</TableHead></TableRow></TableHeader>
@@ -128,42 +128,42 @@ export function DashboardCharts({ requests, logs }: DashboardChartsProps) {
                             </TableBody>
                         </Table>
                     </div>
-                </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
             <UserActivityTable requests={requests} logs={logs} />
-        </div>
+      </div>
 
         {/* Sağ Taraf: Pasta Grafikler */}
         <div className="lg:col-span-1 space-y-6">
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><Tag/> Talep Konularına Göre Dağılım</CardTitle></CardHeader>
-                <CardContent>
+          <CardContent>
                     <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                             <Pie data={chartData.talepKonusuDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                                 {chartData.talepKonusuDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
+                </Pie>
                             <Tooltip />
                             <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><CheckCircle/> Değerlendirme Sonuçları</CardTitle></CardHeader>
-                <CardContent>
+          <CardContent>
                      <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                             <Pie data={chartData.degerlendirmeSonucuDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                                 {chartData.degerlendirmeSonucuDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
+                </Pie>
                             <Tooltip />
                             <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
-        </div>
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+                </div>
       </div>
     </div>
   )
