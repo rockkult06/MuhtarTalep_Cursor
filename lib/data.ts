@@ -305,7 +305,7 @@ export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
     console.error("Error fetching muhtar data:", error)
     return []
   }
-  // Convert snake_case to camelCase
+  // Convert snake_case to camelCase and preserve original case
   return data.map((item) => ({
     ilceAdi: item.ilce_adi,
     mahalleAdi: item.mahalle_adi,
@@ -324,10 +324,10 @@ export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
 
   // Insert new muhtar data
   const formattedData = data.map((m) => ({
-    ilce_adi: m.ilceAdi.trim().toLowerCase(),
-    mahalle_adi: m.mahalleAdi.trim().toLowerCase(),
-    muhtar_adi: m.muhtarAdi,
-    muhtar_telefonu: m.muhtarTelefonu,
+    ilce_adi: m.ilceAdi.trim(),  // İlçe adını olduğu gibi kaydet
+    mahalle_adi: m.mahalleAdi.trim(),  // Mahalle adını olduğu gibi kaydet
+    muhtar_adi: m.muhtarAdi?.trim() || "",
+    muhtar_telefonu: m.muhtarTelefonu?.trim() || "",
   }))
   const { error: insertError } = await supabase.from("muhtar_info").insert(formattedData)
   if (insertError) {
@@ -342,11 +342,11 @@ export const bulkImportRequests = async (
   const currentMuhtarData = await getMuhtarData() // Get current muhtar data from DB
 
   for (const req of data) {
-    // Muhtar bilgilerini ilçe ve mahalle adına göre bul ve ekle
+    // Muhtar bilgilerini ilçe ve mahalle adına göre case-insensitive olarak bul
     const foundMuhtar = currentMuhtarData.find(
       (m) =>
-        m.ilceAdi.toLowerCase() === req.ilceAdi.trim().toLowerCase() &&
-        m.mahalleAdi.toLowerCase() === req.mahalleAdi.trim().toLowerCase(),
+        m.ilceAdi.toLocaleUpperCase('tr-TR') === req.ilceAdi.trim().toLocaleUpperCase('tr-TR') &&
+        m.mahalleAdi.toLocaleUpperCase('tr-TR') === req.mahalleAdi.trim().toLocaleUpperCase('tr-TR'),
     )
 
     await addRequest({

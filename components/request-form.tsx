@@ -61,6 +61,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
   const [errorMuhtarData, setErrorMuhtarData] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({})
 
   useEffect(() => {
     const fetchMuhtarData = async () => {
@@ -90,6 +91,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
       const mahalleler = muhtarInfos
         .filter((info) => info.ilceAdi.toLocaleUpperCase('tr-TR') === formData.ilceAdi.toLocaleUpperCase('tr-TR'))
         .map((info) => info.mahalleAdi)
+        .sort((a, b) => a.localeCompare(b, 'tr-TR'))
       setFilteredMahalleler([...new Set(mahalleler)])
     } else {
       setFilteredMahalleler([])
@@ -135,7 +137,10 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: id === "ilceAdi" || id === "mahalleAdi" ? value.toUpperCase() : value }))
+    setFormData((prev) => ({ 
+      ...prev, 
+      [id]: value // İlçe ve mahalle adlarını olduğu gibi sakla
+    }))
   }
 
   const handleDateChange = (date: Date | undefined) => {
@@ -144,15 +149,55 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
+  // Form validasyon fonksiyonu
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+    
+    // Zorunlu alanları kontrol et
+    if (!formData.ilceAdi?.trim()) {
+      errors.ilceAdi = "İlçe seçimi zorunludur";
+    }
+    if (!formData.mahalleAdi?.trim()) {
+      errors.mahalleAdi = "Mahalle seçimi zorunludur";
+    }
+    if (!formData.talebinGelisSekli?.trim()) {
+      errors.talebinGelisSekli = "Talebin geliş şekli seçimi zorunludur";
+    }
+    if (!formData.talepTarihi?.trim()) {
+      errors.talepTarihi = "Talep tarihi seçimi zorunludur";
+    }
+    if (!formData.talepKonusu?.trim()) {
+      errors.talepKonusu = "Talep konusu seçimi zorunludur";
+    }
+    if (!formData.degerlendirmeSonucu?.trim()) {
+      errors.degerlendirmeSonucu = "Değerlendirme sonucu seçimi zorunludur";
+    }
+    if (!formData.aciklama?.trim()) {
+      errors.aciklama = "Açıklama alanı zorunludur";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))].sort((a, b) => 
-    a.toLocaleUpperCase('tr-TR').localeCompare(b.toLocaleUpperCase('tr-TR'), 'tr-TR')
-  )
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      onSave(formData);
+      onClose();
+    } else {
+      // Hata mesajını göster
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const errorElement = document.getElementById(firstErrorField);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
+
+  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))]
+    .sort((a, b) => a.localeCompare(b, 'tr-TR'))
 
   if (loadingMuhtarData) {
     return <div className="p-4 text-center">Muhtar bilgileri yükleniyor...</div>
@@ -168,40 +213,50 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
         <Label htmlFor="ilceAdi" className="text-right">
           İlçe Adı
         </Label>
-        <Select onValueChange={(value) => handleSelectChange("ilceAdi", value)} value={formData.ilceAdi} required>
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="İlçe Seçin" />
-          </SelectTrigger>
-          <SelectContent>
-            {uniqueIlceler.map((ilce) => (
-              <SelectItem key={ilce} value={ilce}>
-                {ilce}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-3">
+          <Select onValueChange={(value) => handleSelectChange("ilceAdi", value)} value={formData.ilceAdi} required>
+            <SelectTrigger className={cn(validationErrors.ilceAdi && "border-red-500")}>
+              <SelectValue placeholder="İlçe Seçin" />
+            </SelectTrigger>
+            <SelectContent>
+              {uniqueIlceler.map((ilce) => (
+                <SelectItem key={ilce} value={ilce}>
+                  {ilce}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.ilceAdi && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.ilceAdi}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="mahalleAdi" className="text-right">
           Mahalle Adı
         </Label>
-        <Select
-          onValueChange={(value) => handleSelectChange("mahalleAdi", value)}
-          value={formData.mahalleAdi}
-          required
-          disabled={!formData.ilceAdi || filteredMahalleler.length === 0}
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Mahalle Seçin" />
-          </SelectTrigger>
-          <SelectContent>
-            {filteredMahalleler.map((mahalle) => (
-              <SelectItem key={mahalle} value={mahalle}>
-                {mahalle}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-3">
+          <Select
+            onValueChange={(value) => handleSelectChange("mahalleAdi", value)}
+            value={formData.mahalleAdi}
+            required
+            disabled={!formData.ilceAdi || filteredMahalleler.length === 0}
+          >
+            <SelectTrigger className={cn(validationErrors.mahalleAdi && "border-red-500")}>
+              <SelectValue placeholder="Mahalle Seçin" />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredMahalleler.map((mahalle) => (
+                <SelectItem key={mahalle} value={mahalle}>
+                  {mahalle}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.mahalleAdi && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.mahalleAdi}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="muhtarAdi" className="text-right">
@@ -219,76 +274,103 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
         <Label htmlFor="talebinGelisSekli" className="text-right">
           Talebin Geliş Şekli
         </Label>
-        <Select
-          onValueChange={(value) => handleSelectChange("talebinGelisSekli", value)}
-          value={formData.talebinGelisSekli}
-          required
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Seçiniz" />
-          </SelectTrigger>
-          <SelectContent>
-            {dropdownOptions.talebinGelisSekli.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-3">
+          <Select
+            onValueChange={(value) => handleSelectChange("talebinGelisSekli", value)}
+            value={formData.talebinGelisSekli}
+            required
+          >
+            <SelectTrigger className={cn(validationErrors.talebinGelisSekli && "border-red-500")}>
+              <SelectValue placeholder="Seçiniz" />
+            </SelectTrigger>
+            <SelectContent>
+              {dropdownOptions.talebinGelisSekli.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.talebinGelisSekli && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.talebinGelisSekli}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="talepTarihi" className="text-right">
           Talep Tarihi
         </Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "col-span-3 justify-start text-left font-normal",
-                !formData.talepTarihi && "text-muted-foreground",
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {formData.talepTarihi ? format(new Date(formData.talepTarihi), "PPP") : <span>Tarih Seçin</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={formData.talepTarihi ? new Date(formData.talepTarihi) : undefined}
-              onSelect={handleDateChange}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="col-span-3">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !formData.talepTarihi && "text-muted-foreground",
+                  validationErrors.talepTarihi && "border-red-500"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.talepTarihi ? format(new Date(formData.talepTarihi), "PPP") : <span>Tarih Seçin</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={formData.talepTarihi ? new Date(formData.talepTarihi) : undefined}
+                onSelect={handleDateChange}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {validationErrors.talepTarihi && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.talepTarihi}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="talepKonusu" className="text-right">
           Talep Konusu
         </Label>
-        <Select
-          onValueChange={(value) => handleSelectChange("talepKonusu", value)}
-          value={formData.talepKonusu}
-          required
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Seçiniz" />
-          </SelectTrigger>
-          <SelectContent>
-            {dropdownOptions.talepKonusu.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-3">
+          <Select
+            onValueChange={(value) => handleSelectChange("talepKonusu", value)}
+            value={formData.talepKonusu}
+            required
+          >
+            <SelectTrigger className={cn(validationErrors.talepKonusu && "border-red-500")}>
+              <SelectValue placeholder="Seçiniz" />
+            </SelectTrigger>
+            <SelectContent>
+              {dropdownOptions.talepKonusu.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.talepKonusu && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.talepKonusu}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="aciklama" className="text-right">
           Açıklama
         </Label>
-        <Textarea id="aciklama" value={formData.aciklama} onChange={handleChange} className="col-span-3" />
+        <div className="col-span-3">
+          <Textarea 
+            id="aciklama" 
+            value={formData.aciklama} 
+            onChange={handleChange} 
+            className={cn(validationErrors.aciklama && "border-red-500")}
+            required
+          />
+          {validationErrors.aciklama && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.aciklama}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="degerlendirme" className="text-right">
@@ -300,22 +382,27 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
         <Label htmlFor="degerlendirmeSonucu" className="text-right">
           Değerlendirme Sonucu
         </Label>
-        <Select
-          onValueChange={(value) => handleSelectChange("degerlendirmeSonucu", value)}
-          value={formData.degerlendirmeSonucu}
-          required
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Seçiniz" />
-          </SelectTrigger>
-          <SelectContent>
-            {dropdownOptions.degerlendirmeSonucu.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-3">
+          <Select
+            onValueChange={(value) => handleSelectChange("degerlendirmeSonucu", value)}
+            value={formData.degerlendirmeSonucu}
+            required
+          >
+            <SelectTrigger className={cn(validationErrors.degerlendirmeSonucu && "border-red-500")}>
+              <SelectValue placeholder="Seçiniz" />
+            </SelectTrigger>
+            <SelectContent>
+              {dropdownOptions.degerlendirmeSonucu.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.degerlendirmeSonucu && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.degerlendirmeSonucu}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="guncelleyen" className="text-right">
