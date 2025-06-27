@@ -152,7 +152,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     onClose();
   };
 
-  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi.toUpperCase()))].sort();
+  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))].sort();
 
   if (loadingMuhtarData) {
     return <div className="p-4 text-center">Muhtar bilgileri yükleniyor...</div>
