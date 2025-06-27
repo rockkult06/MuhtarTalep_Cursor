@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils"
 
 type FormData = Omit<
   Request,
-  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan" | "guncelleyen"
+  "id" | "talepNo" | "guncellemeTarihi" | "talebiOlusturan"
 >;
 
 interface RequestFormProps {
@@ -68,13 +68,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
       setErrorMuhtarData(null)
       try {
         const data = await getMuhtarData()
-        // İlçe ve mahalle adlarını büyük harfe çevir
-        const upperCaseData = data.map(info => ({
-          ...info,
-          ilceAdi: info.ilceAdi.toUpperCase(),
-          mahalleAdi: info.mahalleAdi.toUpperCase()
-        }))
-        setMuhtarInfos(upperCaseData)
+        setMuhtarInfos(data)
       } catch (err) {
         console.error("Failed to fetch muhtar data:", err)
         setErrorMuhtarData("Muhtar bilgileri yüklenirken bir hata oluştu.")
@@ -88,8 +82,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   useEffect(() => {
     if (formData.ilceAdi) {
       const mahalleler = muhtarInfos
-        .filter((info) => info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase())
-        .map((info) => info.mahalleAdi.toUpperCase())
+        .filter((info) => info.ilceAdi === formData.ilceAdi)
+        .map((info) => info.mahalleAdi)
       setFilteredMahalleler([...new Set(mahalleler)])
     } else {
       setFilteredMahalleler([])
@@ -104,8 +98,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     if (formData.ilceAdi && formData.mahalleAdi) {
       const selectedMuhtar = muhtarInfos.find(
         (info) =>
-          info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase() &&
-          info.mahalleAdi.toUpperCase() === formData.mahalleAdi.toUpperCase(),
+          info.ilceAdi === formData.ilceAdi &&
+          info.mahalleAdi === formData.mahalleAdi,
       )
       if (selectedMuhtar) {
         setFormData((prev) => ({
@@ -135,7 +129,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: id === "ilceAdi" || id === "mahalleAdi" ? value.toUpperCase() : value }))
+    setFormData((prev) => ({ ...prev, [id]: value }))
   }
 
   const handleDateChange = (date: Date | undefined) => {
