@@ -300,7 +300,8 @@ export const deleteRequests = async (ids: string[]): Promise<boolean> => {
 }
 
 export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
-  const { data, error } = await supabase.from("muhtar_info").select("*")
+  // Supabase varsayılan olarak 0-999 arası 1000 kayıt döndürür; daha fazla veri çekmek için limit veya range belirt
+  const { data, error } = await supabase.from("muhtar_info").select("*").limit(10000)
   if (error) {
     console.error("Error fetching muhtar data:", error)
     return []
