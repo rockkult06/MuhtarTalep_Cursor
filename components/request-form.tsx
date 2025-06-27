@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +14,6 @@ import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { type Request, type MuhtarInfo, dropdownOptions, getMuhtarData } from "@/lib/data"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/contexts/auth-context"
 
 type FormData = Omit<
   Request,
@@ -23,7 +22,7 @@ type FormData = Omit<
 
 interface RequestFormProps {
   initialData?: Request;
-  onSave: (data: Partial<Request>) => void;
+  onSave: (data: FormData) => void;
   onClose: () => void;
 }
 
@@ -62,7 +61,6 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   const [filteredMahalleler, setFilteredMahalleler] = useState<string[]>([])
   const [loadingMuhtarData, setLoadingMuhtarData] = useState(true)
   const [errorMuhtarData, setErrorMuhtarData] = useState<string | null>(null)
-  const { user } = useAuth()
 
   useEffect(() => {
     const fetchMuhtarData = async () => {
@@ -70,11 +68,11 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
       setErrorMuhtarData(null)
       try {
         const data = await getMuhtarData()
-        // İlçe ve mahalle adlarını büyük harfe çevir
+        // İlçe ve mahalle adlarını Türkçe karakter duyarlı olarak büyük harfe çevir
         const upperCaseData = data.map(info => ({
           ...info,
-          ilceAdi: info.ilceAdi.toUpperCase(),
-          mahalleAdi: info.mahalleAdi.toUpperCase()
+          ilceAdi: info.ilceAdi.toLocaleUpperCase('tr-TR'),
+          mahalleAdi: info.mahalleAdi.toLocaleUpperCase('tr-TR')
         }))
         setMuhtarInfos(upperCaseData)
       } catch (err) {
@@ -90,8 +88,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
   useEffect(() => {
     if (formData.ilceAdi) {
       const mahalleler = muhtarInfos
-        .filter((info) => info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase())
-        .map((info) => info.mahalleAdi.toUpperCase())
+        .filter((info) => info.ilceAdi.toLocaleUpperCase('tr-TR') === formData.ilceAdi.toLocaleUpperCase('tr-TR'))
+        .map((info) => info.mahalleAdi)
       setFilteredMahalleler([...new Set(mahalleler)])
     } else {
       setFilteredMahalleler([])
@@ -106,8 +104,8 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     if (formData.ilceAdi && formData.mahalleAdi) {
       const selectedMuhtar = muhtarInfos.find(
         (info) =>
-          info.ilceAdi.toUpperCase() === formData.ilceAdi.toUpperCase() &&
-          info.mahalleAdi.toUpperCase() === formData.mahalleAdi.toUpperCase(),
+          info.ilceAdi.toLocaleUpperCase('tr-TR') === formData.ilceAdi.toLocaleUpperCase('tr-TR') &&
+          info.mahalleAdi.toLocaleUpperCase('tr-TR') === formData.mahalleAdi.toLocaleUpperCase('tr-TR')
       )
       if (selectedMuhtar) {
         setFormData((prev) => ({
@@ -152,7 +150,9 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
     onClose();
   };
 
-  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))].sort();
+  const uniqueIlceler = [...new Set(muhtarInfos.map((info) => info.ilceAdi))].sort((a, b) => 
+    a.toLocaleUpperCase('tr-TR').localeCompare(b.toLocaleUpperCase('tr-TR'), 'tr-TR')
+  )
 
   if (loadingMuhtarData) {
     return <div className="p-4 text-center">Muhtar bilgileri yükleniyor...</div>

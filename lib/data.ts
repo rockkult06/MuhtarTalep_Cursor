@@ -130,8 +130,8 @@ export const addRequest = async (
   const requestToInsert = {
     talep_no,
     talebi_olusturan: newRequest.talebiOlusturan,
-    ilce_adi: newRequest.ilceAdi.toUpperCase(),
-    mahalle_adi: newRequest.mahalleAdi.toUpperCase(),
+    ilce_adi: newRequest.ilceAdi.toLocaleUpperCase('tr-TR'),
+    mahalle_adi: newRequest.mahalleAdi.toLocaleUpperCase('tr-TR'),
     muhtar_adi: newRequest.muhtarAdi ?? "",
     muhtar_telefonu: newRequest.muhtarTelefonu ?? "",
     talebin_gelis_sekli: newRequest.talebinGelisSekli,
@@ -300,9 +300,7 @@ export const deleteRequests = async (ids: string[]): Promise<boolean> => {
 }
 
 export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
-  // Increase limit to fetch all muhtar data, default is 1000
-  const { data, error } = await supabase.from("muhtar_info").select("*").limit(3000)
-
+  const { data, error } = await supabase.from("muhtar_info").select("*")
   if (error) {
     console.error("Error fetching muhtar data:", error)
     return []
