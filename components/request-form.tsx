@@ -197,7 +197,7 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
         ...formData,
         guncelleyen: user?.username || "Sistem"
       });
-      onClose();
+    onClose();
     } else {
       // Hata mesajını göster
       const firstErrorField = Object.keys(validationErrors)[0];
@@ -229,18 +229,18 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           İlçe Adı
         </Label>
         <div className="col-span-3">
-          <Select onValueChange={(value) => handleSelectChange("ilceAdi", value)} value={formData.ilceAdi} required>
+        <Select onValueChange={(value) => handleSelectChange("ilceAdi", value)} value={formData.ilceAdi} required>
             <SelectTrigger className={cn(validationErrors.ilceAdi && "border-red-500")}>
-              <SelectValue placeholder="İlçe Seçin" />
-            </SelectTrigger>
+            <SelectValue placeholder="İlçe Seçin" />
+          </SelectTrigger>
             <SelectContent className="max-h-[80vh] overflow-y-auto">
-              {uniqueIlceler.map((ilce) => (
-                <SelectItem key={ilce} value={ilce}>
-                  {ilce}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {uniqueIlceler.map((ilce) => (
+              <SelectItem key={ilce} value={ilce}>
+                {ilce}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           {validationErrors.ilceAdi && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.ilceAdi}</p>
           )}
@@ -251,23 +251,23 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           Mahalle Adı
         </Label>
         <div className="col-span-3">
-          <Select
-            onValueChange={(value) => handleSelectChange("mahalleAdi", value)}
-            value={formData.mahalleAdi}
-            required
-            disabled={!formData.ilceAdi || filteredMahalleler.length === 0}
-          >
+        <Select
+          onValueChange={(value) => handleSelectChange("mahalleAdi", value)}
+          value={formData.mahalleAdi}
+          required
+          disabled={!formData.ilceAdi || filteredMahalleler.length === 0}
+        >
             <SelectTrigger className={cn(validationErrors.mahalleAdi && "border-red-500")}>
-              <SelectValue placeholder="Mahalle Seçin" />
-            </SelectTrigger>
+            <SelectValue placeholder="Mahalle Seçin" />
+          </SelectTrigger>
             <SelectContent className="max-h-[80vh] overflow-y-auto">
-              {filteredMahalleler.map((mahalle) => (
-                <SelectItem key={mahalle} value={mahalle}>
-                  {mahalle}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {filteredMahalleler.map((mahalle) => (
+              <SelectItem key={mahalle} value={mahalle}>
+                {mahalle}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           {validationErrors.mahalleAdi && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.mahalleAdi}</p>
           )}
@@ -290,22 +290,22 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           Talebin Geliş Şekli
         </Label>
         <div className="col-span-3">
-          <Select
-            onValueChange={(value) => handleSelectChange("talebinGelisSekli", value)}
-            value={formData.talebinGelisSekli}
-            required
-          >
+        <Select
+          onValueChange={(value) => handleSelectChange("talebinGelisSekli", value)}
+          value={formData.talebinGelisSekli}
+          required
+        >
             <SelectTrigger className={cn(validationErrors.talebinGelisSekli && "border-red-500")}>
-              <SelectValue placeholder="Seçiniz" />
-            </SelectTrigger>
-            <SelectContent>
-              {dropdownOptions.talebinGelisSekli.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <SelectValue placeholder="Seçiniz" />
+          </SelectTrigger>
+          <SelectContent>
+            {dropdownOptions.talebinGelisSekli.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           {validationErrors.talebinGelisSekli && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.talebinGelisSekli}</p>
           )}
@@ -316,29 +316,29 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           Talep Tarihi
         </Label>
         <div className="col-span-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
                   "w-full justify-start text-left font-normal",
-                  !formData.talepTarihi && "text-muted-foreground",
+                !formData.talepTarihi && "text-muted-foreground",
                   validationErrors.talepTarihi && "border-red-500"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formData.talepTarihi ? format(new Date(formData.talepTarihi), "PPP") : <span>Tarih Seçin</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={formData.talepTarihi ? new Date(formData.talepTarihi) : undefined}
-                onSelect={handleDateChange}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formData.talepTarihi ? format(new Date(formData.talepTarihi), "PPP") : <span>Tarih Seçin</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={formData.talepTarihi ? new Date(formData.talepTarihi) : undefined}
+              onSelect={handleDateChange}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
           {validationErrors.talepTarihi && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.talepTarihi}</p>
           )}
@@ -349,22 +349,22 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           Talep Konusu
         </Label>
         <div className="col-span-3">
-          <Select
-            onValueChange={(value) => handleSelectChange("talepKonusu", value)}
-            value={formData.talepKonusu}
-            required
-          >
+        <Select
+          onValueChange={(value) => handleSelectChange("talepKonusu", value)}
+          value={formData.talepKonusu}
+          required
+        >
             <SelectTrigger className={cn(validationErrors.talepKonusu && "border-red-500")}>
-              <SelectValue placeholder="Seçiniz" />
-            </SelectTrigger>
-            <SelectContent>
-              {dropdownOptions.talepKonusu.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <SelectValue placeholder="Seçiniz" />
+          </SelectTrigger>
+          <SelectContent>
+            {dropdownOptions.talepKonusu.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           {validationErrors.talepKonusu && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.talepKonusu}</p>
           )}
@@ -398,26 +398,26 @@ export function RequestForm({ initialData, onSave, onClose }: RequestFormProps) 
           Değerlendirme Sonucu
         </Label>
         <div className="col-span-3">
-          <Select
-            onValueChange={(value) => handleSelectChange("degerlendirmeSonucu", value)}
-            value={formData.degerlendirmeSonucu}
-            required
-          >
+        <Select
+          onValueChange={(value) => handleSelectChange("degerlendirmeSonucu", value)}
+          value={formData.degerlendirmeSonucu}
+          required
+        >
             <SelectTrigger className={cn(validationErrors.degerlendirmeSonucu && "border-red-500")}>
-              <SelectValue placeholder="Seçiniz" />
-            </SelectTrigger>
-            <SelectContent>
-              {dropdownOptions.degerlendirmeSonucu.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <SelectValue placeholder="Seçiniz" />
+          </SelectTrigger>
+          <SelectContent>
+            {dropdownOptions.degerlendirmeSonucu.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           {validationErrors.degerlendirmeSonucu && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.degerlendirmeSonucu}</p>
           )}
-        </div>
+      </div>
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="outline" onClick={onClose} className="bg-white text-black">

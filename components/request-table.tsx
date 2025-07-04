@@ -682,6 +682,16 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                                 m.ilceAdi.toLocaleUpperCase('tr-TR') === r.ilceAdi.toLocaleUpperCase('tr-TR') &&
                                 m.mahalleAdi.toLocaleUpperCase('tr-TR') === r.mahalleAdi.toLocaleUpperCase('tr-TR')
                             )
+                            
+                            // Debug logging
+                            console.log('Talep için muhtar aranıyor:', {
+                              talepIlce: r.ilceAdi,
+                              talepMahalle: r.mahalleAdi,
+                              bulunanMuhtar: muhtar,
+                              muhtarSayisi: muhtarInfos.length,
+                              fotografUrl: muhtar?.fotografUrl
+                            })
+                            
                             if (muhtar?.fotografUrl) {
                               return (
                                 <div>
@@ -692,14 +702,29 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                                       alt={`${r.muhtarAdi} fotoğrafı`}
                                       className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                                       onError={(e) => {
+                                        console.error('Fotoğraf yüklenemedi:', muhtar.fotografUrl)
                                         e.currentTarget.style.display = 'none'
+                                      }}
+                                      onLoad={() => {
+                                        console.log('Fotoğraf başarıyla yüklendi:', muhtar.fotografUrl)
                                       }}
                                     />
                                   </div>
                                 </div>
                               )
+                            } else {
+                              // Debug: Neden fotoğraf yok?
+                              return (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground">Debug:</p>
+                                  <p className="text-xs text-gray-500">
+                                    Muhtar bulundu: {muhtar ? 'Evet' : 'Hayır'}<br/>
+                                    Fotoğraf URL: {muhtar?.fotografUrl || 'Yok'}<br/>
+                                    Hemşehri No: {muhtar?.hemsehriNo || 'Yok'}
+                                  </p>
+                                </div>
+                              )
                             }
-                            return null
                           })()}
                           {(() => {
                             const muhtar = muhtarInfos.find(
