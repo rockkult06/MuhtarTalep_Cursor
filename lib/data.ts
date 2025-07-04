@@ -24,6 +24,8 @@ export interface MuhtarInfo {
   mahalleAdi: string
   muhtarAdi: string
   muhtarTelefonu: string
+  hemsehriNo?: string
+  fotografUrl?: string
 }
 
 export interface LogEntry {
@@ -324,6 +326,8 @@ export const getMuhtarData = async (): Promise<MuhtarInfo[]> => {
     mahalleAdi: String(item.mahalle_adi ?? "").trim().toLocaleUpperCase('tr-TR'),
     muhtarAdi: String(item.muhtar_adi ?? "").trim(),
     muhtarTelefonu: String(item.muhtar_telefonu ?? "").trim(),
+    hemsehriNo: item.hemsehri_no ? String(item.hemsehri_no).trim() : undefined,
+    fotografUrl: item.fotograf_url ? String(item.fotograf_url).trim() : undefined,
   }));
 };
 
@@ -341,6 +345,8 @@ export const addMuhtarData = async (data: MuhtarInfo[]): Promise<void> => {
     mahalle_adi: String(m.mahalleAdi ?? "").trim(),  // Mahalle adını olduğu gibi kaydet
     muhtar_adi: String(m.muhtarAdi ?? "").trim(),
     muhtar_telefonu: String(m.muhtarTelefonu ?? "").trim(),
+    hemsehri_no: m.hemsehriNo ? String(m.hemsehriNo).trim() : null,
+    fotograf_url: m.fotografUrl ? String(m.fotografUrl).trim() : null,
   }))
   const { error: insertError } = await supabase.from("muhtar_info").insert(formattedData)
   if (insertError) {

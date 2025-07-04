@@ -176,6 +176,8 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
         mahalleAdi: item["Mahalle Adı"],
         muhtarAdi: item["Muhtar Adı"],
         muhtarTelefonu: item["Muhtar Telefonu"],
+        hemsehriNo: item["HEMSEHRI NO"] || item["Hemşehri No"] || item["Hemsehri No"] || item["HEMŞEHRI NO"],
+        fotografUrl: item["FOTOGRAF"] || item["Fotoğraf"] || item["Fotograf"] || item["FOTOĞRAF"],
       })) as MuhtarInfo[]
     } else {
       const requiredRequestHeaders = [
@@ -197,6 +199,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
       }
 
       return dataRows.map((item) => ({
+        talepNo: item["Talep No"] || "",
         talebiOlusturan: item["Talebi Oluşturan"],
         ilceAdi: item["İlçe Adı"],
         mahalleAdi: item["Mahalle Adı"],
@@ -209,7 +212,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
         degerlendirme: item["Değerlendirme"],
         degerlendirmeSonucu: item["Değerlendirme Sonucu"],
         guncelleyen: item["Güncelleyen"] || "",
-      })) as Omit<RequestType, "id" | "talepNo" | "guncellemeTarihi">[]
+      })) as Omit<RequestType, "id" | "guncellemeTarihi">[]
     }
   }
 
@@ -256,6 +259,8 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
                 mahalleAdi: item["Mahalle Adı"],
                 muhtarAdi: item["Muhtar Adı"],
                 muhtarTelefonu: item["Muhtar Telefonu"],
+                hemsehriNo: item["HEMSEHRI NO"] || item["Hemşehri No"] || item["Hemsehri No"] || item["HEMŞEHRI NO"],
+                fotografUrl: item["FOTOGRAF"] || item["Fotoğraf"] || item["Fotograf"] || item["FOTOĞRAF"],
               })) as MuhtarInfo[],
             )
           } else {
@@ -278,6 +283,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
             }
             return resolve(
               processedData.map((item) => ({
+                talepNo: item["Talep No"] || "",
                 talebiOlusturan: item["Talebi Oluşturan"],
                 ilceAdi: item["İlçe Adı"],
                 mahalleAdi: item["Mahalle Adı"],
@@ -290,7 +296,7 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
                 degerlendirme: item["Değerlendirme"],
                 degerlendirmeSonucu: item["Değerlendirme Sonucu"],
                 guncelleyen: item["Güncelleyen"] || "",
-              })) as Omit<RequestType, "id" | "talepNo" | "guncellemeTarihi">[],
+              })) as Omit<RequestType, "id" | "guncellemeTarihi">[],
             )
           }
         } catch (error) {
@@ -354,16 +360,16 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
 
     const processFile = async (fileContent: string | File) => {
       try {
-        let parsedData: Omit<RequestType, "id" | "talepNo" | "guncellemeTarihi">[]
+        let parsedData: Omit<RequestType, "id" | "guncellemeTarihi">[]
         if (isExcel) {
           parsedData = (await parseExcel(fileContent as File, "request")) as Omit<
             RequestType,
-            "id" | "talepNo" | "guncellemeTarihi"
+            "id" | "guncellemeTarihi"
           >[]
         } else {
           parsedData = parseCsv(fileContent as string, "request") as Omit<
             RequestType,
-            "id" | "talepNo" | "guncellemeTarihi"
+            "id" | "guncellemeTarihi"
           >[]
         }
         await bulkImportRequests(parsedData)
@@ -394,7 +400,11 @@ export function DataUploadForm({ onUploadSuccess = () => {} }: DataUploadFormPro
         <CardHeader>
           <CardTitle>Muhtar Bilgilerini Yükle</CardTitle>
           <CardDescription>
-            İlçe, mahalle, muhtar adı ve telefon bilgilerini içeren bir CSV veya Excel dosyası yükleyin.
+            İlçe, mahalle, muhtar adı, telefon, hemşehri no ve fotoğraf bilgilerini içeren bir CSV veya Excel dosyası yükleyin.
+            <br />
+            <strong>Gerekli alanlar:</strong> İlçe Adı, Mahalle Adı, Muhtar Adı, Muhtar Telefonu
+            <br />
+            <strong>İsteğe bağlı alanlar:</strong> HEMSEHRI NO, FOTOGRAF (veya FOTOĞRAF)
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

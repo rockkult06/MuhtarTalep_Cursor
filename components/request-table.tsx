@@ -676,6 +676,47 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                             <p className="text-sm font-medium text-muted-foreground">Muhtar Telefonu:</p>
                             <p className="text-sm">{r.muhtarTelefonu}</p>
                           </div>
+                          {(() => {
+                            const muhtar = muhtarInfos.find(
+                              (m) =>
+                                m.ilceAdi.toLocaleUpperCase('tr-TR') === r.ilceAdi.toLocaleUpperCase('tr-TR') &&
+                                m.mahalleAdi.toLocaleUpperCase('tr-TR') === r.mahalleAdi.toLocaleUpperCase('tr-TR')
+                            )
+                            if (muhtar?.fotografUrl) {
+                              return (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground">Muhtar Fotoğrafı:</p>
+                                  <div className="mt-2">
+                                    <img
+                                      src={muhtar.fotografUrl}
+                                      alt={`${r.muhtarAdi} fotoğrafı`}
+                                      className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return null
+                          })()}
+                          {(() => {
+                            const muhtar = muhtarInfos.find(
+                              (m) =>
+                                m.ilceAdi.toLocaleUpperCase('tr-TR') === r.ilceAdi.toLocaleUpperCase('tr-TR') &&
+                                m.mahalleAdi.toLocaleUpperCase('tr-TR') === r.mahalleAdi.toLocaleUpperCase('tr-TR')
+                            )
+                            if (muhtar?.hemsehriNo) {
+                              return (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground">Hemşehri No:</p>
+                                  <p className="text-sm">{muhtar.hemsehriNo}</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          })()}
                           <div>
                             <p className="text-sm font-medium text-muted-foreground">Güncelleyen:</p>
                             <p className="text-sm">{r.guncelleyen || "Belirtilmemiş"}</p>
