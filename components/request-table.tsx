@@ -579,7 +579,17 @@ export function RequestTable({ requests, onAddRequest, onUpdateRequest, onDelete
                           />
                         </TableCell>
                       ),
-                      ...visibleColumns.map((col) => <TableCell key={col}>{r[col]}</TableCell>),
+                      ...visibleColumns.map((col) => (
+                        <TableCell key={col}>
+                          {col === 'aciklama' ? (
+                            <div className="max-w-[200px] truncate" title={r[col]}>
+                              {String(r[col]).length > 50 ? `${String(r[col]).substring(0, 50)}...` : r[col]}
+                            </div>
+                          ) : (
+                            r[col]
+                          )}
+                        </TableCell>
+                      )),
                       role !== 'viewer' && (
                         <TableCell key="actions" className="text-right">
                           <div className="flex justify-end gap-2">
